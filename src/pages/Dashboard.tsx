@@ -1,59 +1,47 @@
-import { motion } from "framer-motion";
-import { DollarSign, TrendingUp, Wallet, ArrowDownCircle, Receipt, Clock } from "lucide-react";
-
-const kpis = [
-  { label: "Receita Bruta", value: "R$ 0,00", icon: DollarSign, sub: "0 serviços", color: "text-primary" },
-  { label: "Lucro Bruto", value: "R$ 0,00", icon: TrendingUp, sub: "0%", color: "text-success" },
-  { label: "Lucro Líquido", value: "R$ 0,00", icon: Wallet, sub: "—", color: "text-info" },
-  { label: "Despesas", value: "R$ 0,00", icon: ArrowDownCircle, sub: "0 lançamentos", color: "text-destructive" },
-  { label: "Ticket Médio", value: "R$ 0,00", icon: Receipt, sub: "—", color: "text-foreground" },
-  { label: "Ganho/Hora", value: "R$ 0/h", icon: Clock, sub: "—", color: "text-info" },
-];
-
-const container = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.08 } },
-};
-
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 },
-};
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import KPICards from "@/components/dashboard/KPICards";
+import OperationalMetrics from "@/components/dashboard/OperationalMetrics";
+import FinancialHealth from "@/components/dashboard/FinancialHealth";
+import PerformanceCharts from "@/components/dashboard/PerformanceCharts";
+import PaymentMethods from "@/components/dashboard/PaymentMethods";
+import ProfitSplit from "@/components/dashboard/ProfitSplit";
+import ServiceIntelligence from "@/components/dashboard/ServiceIntelligence";
+import HourlyPerformance from "@/components/dashboard/HourlyPerformance";
+import ManufacturingAnalysis from "@/components/dashboard/ManufacturingAnalysis";
+import LiveFeed from "@/components/dashboard/LiveFeed";
+import AIInsights from "@/components/dashboard/AIInsights";
+import DetailedTable from "@/components/dashboard/DetailedTable";
 
 const Dashboard = () => {
+  const [selectedBranch, setSelectedBranch] = useState("all");
+  const [selectedPeriod, setSelectedPeriod] = useState("Hoje");
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-foreground">Dashboard</h2>
-        <p className="text-sm text-muted-foreground">Visão geral do dia</p>
-      </div>
-
-      <motion.div
-        variants={container}
-        initial="hidden"
-        animate="show"
-        className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6"
-      >
-        {kpis.map((kpi) => {
-          const Icon = kpi.icon;
-          return (
-            <motion.div key={kpi.label} variants={item} className="glass-card p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground font-medium">{kpi.label}</span>
-                <Icon className={`h-4 w-4 ${kpi.color}`} />
-              </div>
-              <p className="text-lg font-bold text-foreground">{kpi.value}</p>
-              <p className="text-[11px] text-muted-foreground">{kpi.sub}</p>
-            </motion.div>
-          );
-        })}
-      </motion.div>
-
-      <div className="glass-card p-6 text-center">
-        <p className="text-muted-foreground text-sm">
-          Comece fazendo lançamentos para ver seus dados aqui.
-        </p>
-      </div>
+    <div className="space-y-4 pb-24" style={{ background: "#070B14", minHeight: "100vh", margin: "-1.5rem", padding: "1.5rem" }}>
+      <AnimatePresence mode="wait">
+        <motion.div key={`${selectedBranch}-${selectedPeriod}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="space-y-4">
+          <DashboardHeader
+            selectedBranch={selectedBranch}
+            onBranchChange={setSelectedBranch}
+            selectedPeriod={selectedPeriod}
+            onPeriodChange={setSelectedPeriod}
+          />
+          <KPICards />
+          <OperationalMetrics />
+          <FinancialHealth />
+          <PerformanceCharts />
+          <PaymentMethods />
+          <ProfitSplit />
+          <ServiceIntelligence />
+          <HourlyPerformance />
+          <ManufacturingAnalysis />
+          <LiveFeed />
+          <AIInsights />
+          <DetailedTable />
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 };

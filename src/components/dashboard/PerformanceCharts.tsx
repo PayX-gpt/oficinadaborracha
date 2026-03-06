@@ -1,0 +1,171 @@
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  BarChart, Bar, LineChart, Line, AreaChart, Area,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ComposedChart
+} from "recharts";
+import { mockRevenueByDay, mockProfitByDay, mockExpensesByCategory, mockBranchComparison, formatCurrency } from "@/lib/mockDashboardData";
+
+const tabs = ["Receita", "Lucro", "Despesas", "Comparativo Filiais"];
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg px-3 py-2 text-xs border shadow-xl" style={{ background: "rgba(14,20,35,0.95)", borderColor: "rgba(245,158,11,0.3)", boxShadow: "0 0 15px rgba(245,158,11,0.1)" }}>
+      <p className="text-foreground font-medium mb-1">{label}</p>
+      {payload.map((p: any, i: number) => (
+        <p key={i} style={{ color: p.color }}>{p.name}: {formatCurrency(p.value)}</p>
+      ))}
+    </div>
+  );
+};
+
+const PerformanceCharts = () => {
+  const [activeTab, setActiveTab] = useState("Receita");
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.6, duration: 0.4 }}
+      className="rounded-2xl p-6 transition-all duration-300"
+      style={{
+        background: "rgba(14,20,35,0.85)",
+        backdropFilter: "blur(16px)",
+        border: "1px solid rgba(245,158,11,0.08)",
+        boxShadow: "0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03)",
+      }}
+    >
+      <div className="flex flex-wrap gap-1 mb-6 p-1 rounded-lg bg-secondary/30">
+        {tabs.map((t) => (
+          <button
+            key={t}
+            onClick={() => setActiveTab(t)}
+            className={`relative px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+              activeTab === t ? "text-primary" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {activeTab === t && (
+              <motion.div layoutId="chartTab" className="absolute inset-0 bg-secondary/80 rounded-md border border-primary/20" transition={{ type: "spring", bounce: 0.2, duration: 0.4 }} />
+            )}
+            <span className="relative z-10">{t}</span>
+          </button>
+        ))}
+      </div>
+
+      <AnimatePresence mode="wait">
+        <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+          {activeTab === "Receita" && (
+            <div className="space-y-4">
+              <ResponsiveContainer width="100%" height={300}>
+                <ComposedChart data={mockRevenueByDay}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="day" tick={{ fill: "#64748B", fontSize: 11 }} />
+                  <YAxis tick={{ fill: "#64748B", fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="maoDeObra" stackId="a" fill="#F59E0B" name="Mão de Obra" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="fabricadas" stackId="a" fill="#10B981" name="Fabricadas" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="compradas" stackId="a" fill="#3B82F6" name="Compradas" radius={[4, 4, 0, 0]} />
+                  <Line type="monotone" dataKey="total" stroke="rgba(255,255,255,0.8)" strokeWidth={2} dot={false} name="Total" />
+                </ComposedChart>
+              </ResponsiveContainer>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: "Mão de Obra", value: 25600, pct: 43, color: "bg-primary" },
+                  { label: "Fabricadas", value: 19000, pct: 32, color: "bg-emerald-500" },
+                  { label: "Compradas", value: 9300, pct: 15, color: "bg-blue-500" },
+                ].map((m) => (
+                  <div key={m.label} className="rounded-lg p-3 bg-secondary/30 text-center">
+                    <div className={`h-1 w-6 rounded-full ${m.color} mx-auto mb-2`} />
+                    <p className="text-xs text-muted-foreground">{m.label}</p>
+                    <p className="text-sm font-bold text-foreground">{formatCurrency(m.value)}</p>
+                    <p className="text-[11px] text-muted-foreground">{m.pct}%</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "Lucro" && (
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={mockProfitByDay}>
+                <defs>
+                  <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10B981" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey="day" tick={{ fill: "#64748B", fontSize: 11 }} />
+                <YAxis tick={{ fill: "#64748B", fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                <Tooltip content={<CustomTooltip />} />
+                <Area type="monotone" dataKey="lucroBruto" stroke="#86EFAC" fill="url(#profitGrad)" strokeWidth={2} name="Lucro Bruto" />
+                <Area type="monotone" dataKey="lucroLiquido" stroke="#10B981" fill="transparent" strokeWidth={2} name="Lucro Líquido" />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
+
+          {activeTab === "Despesas" && (
+            <div className="space-y-2">
+              {mockExpensesByCategory.map((e) => (
+                <div key={e.category} className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: e.color }} />
+                  <span className="text-xs text-muted-foreground w-48 truncate">{e.category}</span>
+                  <div className="flex-1 h-3 rounded-full bg-secondary/30 overflow-hidden">
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${e.percent}%` }} transition={{ duration: 0.8, delay: 0.2 }} className="h-full rounded-full" style={{ backgroundColor: e.color }} />
+                  </div>
+                  <span className="text-xs font-medium text-foreground w-24 text-right">{formatCurrency(e.value)}</span>
+                  <span className="text-[11px] text-muted-foreground w-10 text-right">{e.percent}%</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {activeTab === "Comparativo Filiais" && (
+            <div className="space-y-4">
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={mockBranchComparison}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="filial" tick={{ fill: "#64748B", fontSize: 11 }} />
+                  <YAxis tick={{ fill: "#64748B", fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="receita" fill="#F59E0B" name="Receita" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="custo" fill="#EF4444" name="Custo" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="lucro" fill="#10B981" name="Lucro" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-muted-foreground border-b border-border/50">
+                      <th className="text-left py-2 font-medium">#</th>
+                      <th className="text-left py-2 font-medium">Filial</th>
+                      <th className="text-right py-2 font-medium">Receita</th>
+                      <th className="text-right py-2 font-medium">Lucro</th>
+                      <th className="text-right py-2 font-medium">Margem</th>
+                      <th className="text-right py-2 font-medium">Ticket</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mockBranchComparison.map((b, i) => (
+                      <tr key={b.filial} className="border-b border-border/30">
+                        <td className="py-2 text-foreground">{i === 0 ? "🏆" : i + 1}</td>
+                        <td className="py-2 text-foreground font-medium">{b.filial}</td>
+                        <td className="py-2 text-right text-foreground">{formatCurrency(b.receita)}</td>
+                        <td className="py-2 text-right text-emerald-500">{formatCurrency(b.lucro)}</td>
+                        <td className="py-2 text-right text-foreground">{b.margem}%</td>
+                        <td className="py-2 text-right text-foreground">{formatCurrency(b.ticket)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </motion.div>
+      </AnimatePresence>
+    </motion.div>
+  );
+};
+
+export default PerformanceCharts;
