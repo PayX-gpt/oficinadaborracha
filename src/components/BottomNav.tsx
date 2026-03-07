@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, ClipboardList, Settings, Users, User, MessageSquare, Package } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Settings, Users, User, Package } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth, UserRole } from "@/hooks/useAuth";
 import odbLogo from "@/assets/odb-logo.png";
@@ -11,28 +11,23 @@ interface NavItem {
   highlight?: boolean;
 }
 
-// Placeholder icon for ODB (logo is used directly in the highlight button)
-const ODBIcon = ({ className }: { className?: string }) => (
-  <img src={odbLogo} alt="ODB" className={className} style={{ objectFit: "contain" }} />
-);
-
 const adminNav: NavItem[] = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/pecas", label: "Peças", icon: Package },
-  { path: "/odb", label: "ODB", icon: ODBIcon, highlight: true },
+  { path: "/equipe", label: "Equipe", icon: Users },
+  { path: "/odb", label: "ODB", icon: null, highlight: true },
   { path: "/history", label: "Histórico", icon: ClipboardList },
   { path: "/settings", label: "Config", icon: Settings },
 ];
 
 const gerenteNav: NavItem[] = [
-  { path: "/dashboard", label: "Resumo", icon: LayoutDashboard },
-  { path: "/odb", label: "ODB", icon: ODBIcon, highlight: true },
+  { path: "/gerente", label: "Resumo", icon: LayoutDashboard },
+  { path: "/odb", label: "ODB", icon: null, highlight: true },
   { path: "/history", label: "Serviços", icon: ClipboardList },
   { path: "/settings", label: "Config", icon: Settings },
 ];
 
 const operadorNav: NavItem[] = [
-  { path: "/odb", label: "ODB", icon: ODBIcon, highlight: true },
+  { path: "/odb", label: "ODB", icon: null, highlight: true },
   { path: "/history", label: "Meus Lanç.", icon: ClipboardList },
   { path: "/perfil", label: "Perfil", icon: User },
 ];
@@ -54,15 +49,7 @@ const BottomNav = () => {
   const navItems = getNavItems(role);
 
   return (
-    <nav
-      className="fixed bottom-0 left-0 right-0 z-50 border-t md:hidden"
-      style={{
-        height: 64,
-        background: "rgba(7,11,20,0.95)",
-        backdropFilter: "blur(20px)",
-        borderColor: "rgba(245,158,11,0.08)",
-      }}
-    >
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/10 md:hidden bg-background/95 backdrop-blur-xl" style={{ height: 64 }}>
       <div className="flex items-end justify-around px-2 pb-safe pt-1 h-full">
         {navItems.map((item) => {
           const isActive = location.pathname.startsWith(item.path);
@@ -78,8 +65,8 @@ const BottomNav = () => {
                 <motion.div
                   whileTap={{ scale: 0.9 }}
                   className="flex h-14 w-14 items-center justify-center rounded-full bg-background border-2 border-primary overflow-hidden"
-                  style={{ boxShadow: "0 0 24px rgba(245,158,11,0.35)" }}
-                  animate={{ boxShadow: ["0 0 20px rgba(245,158,11,0.25)", "0 0 30px rgba(245,158,11,0.45)", "0 0 20px rgba(245,158,11,0.25)"] }}
+                  style={{ boxShadow: "0 0 24px hsl(var(--primary) / 0.35)" }}
+                  animate={{ boxShadow: ["0 0 20px hsl(var(--primary) / 0.25)", "0 0 30px hsl(var(--primary) / 0.45)", "0 0 20px hsl(var(--primary) / 0.25)"] }}
                   transition={{ duration: 2, repeat: Infinity }}
                 >
                   <img src={odbLogo} alt="ODB" className="h-10 w-10 object-contain" />
