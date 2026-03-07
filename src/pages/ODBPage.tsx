@@ -308,6 +308,17 @@ const ODBPage = () => {
       return;
     }
 
+    if (button.value === "confirmar_despesa") {
+      addMessage({
+        type: "odb",
+        content: "Despesa registrada com sucesso.",
+        buttons: [
+          { label: "Novo lançamento", value: "novo", variant: "primary" },
+        ],
+      });
+      return;
+    }
+
     if (button.value === "confirmar_nota") {
       addMessage({
         type: "odb",
