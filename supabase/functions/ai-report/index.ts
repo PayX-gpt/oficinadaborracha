@@ -10,7 +10,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { tipo } = await req.json(); // "semanal" or "mensal"
+    const { tipo } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -68,20 +68,6 @@ FILIAIS: ${filiais.map(f => f.nome).join(", ") || "Nenhuma"}
 SÓCIOS: ${socios.map(s => `${s.nome} (${s.percentual_lucro}%)`).join(", ") || "Nenhum"}
 FECHAMENTOS: ${fechamentos.map(f => `${f.data}: R$${Number(f.receita_bruta).toFixed(2)} receita, R$${Number(f.lucro_liquido).toFixed(2)} lucro`).join(" | ") || "Nenhum"}`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages,
-        stream: true,
-      }),
-    });
-
-    // Build messages for streaming
     const messages = [
       {
         role: "system",
