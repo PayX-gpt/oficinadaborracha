@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 type MessageType = "user" | "odb" | "system";
 type InputMode = null | "foto" | "audio" | "texto" | "despesa";
@@ -103,13 +104,32 @@ const ODBPage = () => {
     fileInputRef.current?.click();
   };
 
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        resolve(result.split(",")[1]);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const url = URL.createObjectURL(file);
     addMessage({ type: "user", content: "📸 Foto do orçamento", imageUrl: url });
     setInputMode(null);
-    processWithODB("foto", "Foto enviada para análise");
+    
+    // Convert to base64 and send to AI
+    try {
+      const base64 = await fileToBase64(file);
+      processWithODB("foto", "", base64, file.type);
+    } catch {
+      processWithODB("foto", "Foto enviada para análise");
+    }
   };
 
   const handleStartRecording = () => {
@@ -191,37 +211,91 @@ const ODBPage = () => {
     }
   };
 
-  const processWithODB = (fonte: string, content: string) => {
+  const processWithODB = async (fonte: string, content: string, imageBase64?: string, mimeType?: string) => {
     setIsProcessing(true);
-    // Simulate ODB processing (will be replaced by real Gemini call in Phase 2)
-    setTimeout(() => {
-      setIsProcessing(false);
-      const mockCard: ODBCard = {
-        cliente: { nome: "João Silva", confianca: "alta" },
-        veiculo: { marca: "Toyota", modelo: "Corolla", ano: 2020, placa: "ABC-1234", confianca: "alta" },
-        itens_dianteira: [
-          { descricao: "Bucha da bandeja inferior (par)", tipo: "peca_fabricada", valor: 180, confianca: "alta" },
-          { descricao: "Coxim do amortecedor (par)", tipo: "peca_fabricada", valor: 120, confianca: "alta" },
-          { descricao: "Mão de obra dianteira", tipo: "mao_de_obra", valor: 150, confianca: "alta" },
-        ],
-        itens_traseira: [
-          { descricao: "Bucha do braço de suspensão (par)", tipo: "peca_fabricada", valor: 160, confianca: "alta" },
-          { descricao: "Mão de obra traseira", tipo: "mao_de_obra", valor: 120, confianca: "alta" },
-        ],
-        subtotal: 730,
+    try {
+      const body: any = { tipo: fonte };
+      if (fonte === "foto" && imageBase64) {
+        body.imageBase64 = imageBase64;
+        body.mimeType = mimeType || "image/jpeg";
+      } else {
+        body.conteudo = content;
+      }
+
+      const { data, error } = await supabase.functions.invoke("odb-processar", { body });
+
+      if (error) throw error;
+
+      const result = data?.result;
+      if (!result || result.raw) {
+        // Fallback: show raw response
+        addMessage({ type: "odb", content: `Não consegui analisar completamente. ${result?.raw || "Tente novamente."}` });
+        setIsProcessing(false);
+        return;
+      }
+
+      // Build card from AI response
+      const allDianteira = (result.itens_dianteira || []).map((it: any) => ({
+        descricao: it.descricao, tipo: it.tipo, valor: it.valor_cobrado || 0, confianca: it.confianca || "media",
+      }));
+      const allTraseira = (result.itens_traseira || []).map((it: any) => ({
+        descricao: it.descricao, tipo: it.tipo, valor: it.valor_cobrado || 0, confianca: it.confianca || "media",
+      }));
+      const allGeral = (result.itens_geral || []).map((it: any) => ({
+        descricao: it.descricao, tipo: it.tipo, valor: it.valor_cobrado || 0, confianca: it.confianca || "media",
+      }));
+
+      const allItems = [...allDianteira, ...allTraseira, ...allGeral];
+      const subtotal = result.valor_total || allItems.reduce((s: number, i: any) => s + (i.valor || 0), 0);
+
+      const card: ODBCard = {
+        cliente: result.cliente?.nome ? { nome: result.cliente.nome, confianca: result.cliente.confianca || "media" } : undefined,
+        veiculo: result.veiculo?.marca ? {
+          marca: result.veiculo.marca, modelo: result.veiculo.modelo || "",
+          ano: result.veiculo.ano, placa: result.veiculo.placa,
+          confianca: result.veiculo.confianca || "media",
+        } : undefined,
+        itens_dianteira: allDianteira.length > 0 ? allDianteira : undefined,
+        itens_traseira: allTraseira.length > 0 ? allTraseira : undefined,
+        subtotal,
         status: "aguardando",
       };
 
-      addMessage({
-        type: "odb",
-        content: "Entendi! Aqui está o que identifiquei:",
-        card: mockCard,
-        buttons: [
+      // Add general items to dianteira if no position specified
+      if (allGeral.length > 0 && !allDianteira.length && !allTraseira.length) {
+        card.itens_dianteira = allGeral;
+      }
+
+      let extraContent = "Entendi! Aqui está o que identifiquei:";
+      if (result.transcricao) {
+        extraContent = `📝 Transcrição: "${result.transcricao}"\n\n${extraContent}`;
+      }
+      if (result.correcoes_feitas?.length > 0) {
+        extraContent += `\n\n🔧 Correções: ${result.correcoes_feitas.map((c: any) => `${c.original} → ${c.corrigido}`).join(", ")}`;
+      }
+
+      const buttons: ChatButton[] = [];
+      if (result.metodo_pagamento) {
+        // AI already identified payment, go straight to confirm
+        buttons.push(
+          { label: "✅ Confirmar e Salvar", value: "pagamento_direto_" + result.metodo_pagamento, variant: "success" },
+          { label: "✏️ Editar algo", value: "pagamento", variant: "default" },
+        );
+      } else {
+        buttons.push(
           { label: "⏳ Entrada — carro fica na oficina", value: "entrada", variant: "default" },
           { label: "💰 Pagamento — serviço concluído", value: "pagamento", variant: "primary" },
-        ],
-      });
-    }, 2000);
+        );
+      }
+
+      addMessage({ type: "odb", content: extraContent, card, buttons });
+    } catch (e: any) {
+      console.error("ODB error:", e);
+      toast.error(e?.message || "Erro ao processar com IA");
+      addMessage({ type: "odb", content: "😅 Desculpa, tive um problema. Tente novamente ou use o modo formulário." });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const formatTime = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
