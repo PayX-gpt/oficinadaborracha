@@ -32,12 +32,12 @@ const AppLayout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <AppHeader />
       <div className="flex">
         <DesktopSidebar />
-        <main className="flex-1 pt-14 pb-20 md:pb-4 md:pl-60">
-          <div className="mx-auto max-w-5xl p-4">
+        <main className="flex-1 pt-14 pb-20 md:pb-4 md:pl-60 w-full min-w-0">
+          <div className="mx-auto max-w-5xl p-3 md:p-4">
             <Outlet />
           </div>
         </main>

@@ -31,7 +31,7 @@ const PerformanceCharts = ({ data }: { data?: DashboardData }) => {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6, duration: 0.4 }}
-      className="rounded-2xl p-6 transition-all duration-300"
+      className="rounded-xl md:rounded-2xl p-3 md:p-6 transition-all duration-300"
       style={{ background: "rgba(14,20,35,0.85)", backdropFilter: "blur(16px)", border: "1px solid rgba(245,158,11,0.08)", boxShadow: "0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03)" }}>
       <div className="flex flex-wrap gap-1 mb-6 p-1 rounded-lg bg-secondary/30">
         {tabs.map((t) => (
@@ -47,7 +47,7 @@ const PerformanceCharts = ({ data }: { data?: DashboardData }) => {
         <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
           {activeTab === "Receita" && (
             <div className="space-y-4">
-              <ResponsiveContainer width="100%" height={300}>
+               <ResponsiveContainer width="100%" height={220}>
                 <ComposedChart data={revenueByDay}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                   <XAxis dataKey="day" tick={{ fill: "#64748B", fontSize: 11 }} />
@@ -59,13 +59,13 @@ const PerformanceCharts = ({ data }: { data?: DashboardData }) => {
                   <Line type="monotone" dataKey="total" stroke="rgba(255,255,255,0.8)" strokeWidth={2} dot={false} name="Total" />
                 </ComposedChart>
               </ResponsiveContainer>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-1.5 md:gap-2">
                 {[
                   { label: "Mão de Obra", value: totalMO, pct: Math.round((totalMO / totalAll) * 100), color: "bg-primary" },
                   { label: "Fabricadas", value: totalFab, pct: Math.round((totalFab / totalAll) * 100), color: "bg-emerald-500" },
                   { label: "Compradas", value: totalComp, pct: Math.round((totalComp / totalAll) * 100), color: "bg-blue-500" },
                 ].map((m) => (
-                  <div key={m.label} className="rounded-lg p-3 bg-secondary/30 text-center">
+                  <div key={m.label} className="rounded-lg p-2 md:p-3 bg-secondary/30 text-center">
                     <div className={`h-1 w-6 rounded-full ${m.color} mx-auto mb-2`} />
                     <p className="text-xs text-muted-foreground">{m.label}</p>
                     <p className="text-sm font-bold text-foreground">{formatCurrency(m.value)}</p>
@@ -77,7 +77,7 @@ const PerformanceCharts = ({ data }: { data?: DashboardData }) => {
           )}
 
           {activeTab === "Lucro" && (
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={profitByDay}>
                 <defs>
                   <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
@@ -100,14 +100,14 @@ const PerformanceCharts = ({ data }: { data?: DashboardData }) => {
               {expenseCategories.length === 0 ? (
                 <p className="text-xs text-muted-foreground text-center py-8">Nenhuma despesa no período</p>
               ) : expenseCategories.map((e) => (
-                <div key={e.category} className="flex items-center gap-3">
+               <div key={e.category} className="flex items-center gap-2 md:gap-3">
                   <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: e.color }} />
-                  <span className="text-xs text-muted-foreground w-48 truncate">{e.category}</span>
-                  <div className="flex-1 h-3 rounded-full bg-secondary/30 overflow-hidden">
+                  <span className="text-[10px] md:text-xs text-muted-foreground flex-1 min-w-0 truncate">{e.category}</span>
+                  <div className="w-16 md:flex-1 h-3 rounded-full bg-secondary/30 overflow-hidden shrink-0">
                     <motion.div initial={{ width: 0 }} animate={{ width: `${e.percent}%` }} transition={{ duration: 0.8, delay: 0.2 }} className="h-full rounded-full" style={{ backgroundColor: e.color }} />
                   </div>
-                  <span className="text-xs font-medium text-foreground w-24 text-right">{formatCurrency(e.value)}</span>
-                  <span className="text-[11px] text-muted-foreground w-10 text-right">{e.percent}%</span>
+                  <span className="text-[10px] md:text-xs font-medium text-foreground shrink-0">{formatCurrency(e.value)}</span>
+                  <span className="text-[10px] text-muted-foreground shrink-0">{e.percent}%</span>
                 </div>
               ))}
             </div>

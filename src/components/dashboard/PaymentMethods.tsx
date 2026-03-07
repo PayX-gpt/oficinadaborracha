@@ -10,7 +10,7 @@ const PaymentMethods = ({ data }: { data?: DashboardData }) => {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7, duration: 0.4 }}
-      className="rounded-2xl p-6 transition-all duration-300"
+      className="rounded-xl md:rounded-2xl p-3 md:p-6 transition-all duration-300"
       style={{ background: "rgba(14,20,35,0.85)", backdropFilter: "blur(16px)", border: "1px solid rgba(245,158,11,0.08)", boxShadow: "0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03)" }}>
       <h3 className="text-[11px] uppercase tracking-[0.05em] text-muted-foreground font-medium mb-4">Receita por Método de Pagamento</h3>
       {methods.length === 0 ? (
@@ -42,14 +42,14 @@ const PaymentMethods = ({ data }: { data?: DashboardData }) => {
               </div>
             </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+          <div className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0">
+            <table className="w-full text-[10px] md:text-xs min-w-[320px]">
               <thead>
                 <tr className="text-muted-foreground border-b border-border/50">
                   <th className="text-left py-2 font-medium">Método</th>
                   <th className="text-right py-2 font-medium">Qtd</th>
                   <th className="text-right py-2 font-medium">Bruto</th>
-                  <th className="text-right py-2 font-medium">Taxas</th>
+                  <th className="text-right py-2 font-medium hidden sm:table-cell">Taxas</th>
                   <th className="text-right py-2 font-medium">Líquido</th>
                   <th className="text-right py-2 font-medium">%</th>
                 </tr>
@@ -57,10 +57,10 @@ const PaymentMethods = ({ data }: { data?: DashboardData }) => {
               <tbody>
                 {methods.map((m) => (
                   <tr key={m.method} className="border-b border-border/30">
-                    <td className="py-2"><div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: m.color }} /><span className="text-foreground">{m.method}</span></div></td>
+                    <td className="py-2"><div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: m.color }} /><span className="text-foreground">{m.method}</span></div></td>
                     <td className="py-2 text-right text-foreground">{m.qty}</td>
                     <td className="py-2 text-right text-foreground">{formatCurrency(m.bruto)}</td>
-                    <td className="py-2 text-right text-red-400">{formatCurrency(m.taxas)}</td>
+                    <td className="py-2 text-right text-red-400 hidden sm:table-cell">{formatCurrency(m.taxas)}</td>
                     <td className="py-2 text-right text-emerald-500">{formatCurrency(m.liquido)}</td>
                     <td className="py-2 text-right text-foreground">{m.percent}%</td>
                   </tr>

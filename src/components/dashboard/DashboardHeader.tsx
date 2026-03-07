@@ -46,7 +46,7 @@ const DashboardHeader = ({ selectedBranch, onBranchChange, selectedPeriod, onPer
           <span className="text-xs text-muted-foreground">{todayCount} lançamentos hoje</span>
         </div>
 
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1 md:gap-1.5">
           {periods.map((p) => (
             <button key={p} onClick={() => onPeriodChange(p)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
@@ -56,7 +56,7 @@ const DashboardHeader = ({ selectedBranch, onBranchChange, selectedPeriod, onPer
         </div>
       </div>
 
-      <div className="flex gap-1 p-1 rounded-xl bg-secondary/30 backdrop-blur-sm border border-border/50 overflow-x-auto">
+      <div className="flex gap-1 p-1 rounded-xl bg-secondary/30 backdrop-blur-sm border border-border/50 overflow-x-auto scrollbar-none -mx-1 px-1">
         {branches.map((b) => (
           <button key={b.id} onClick={() => onBranchChange(b.id)}
             className={`relative px-4 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all duration-300 flex items-center gap-1.5 ${
