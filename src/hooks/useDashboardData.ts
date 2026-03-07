@@ -44,8 +44,8 @@ export interface DashboardData {
 }
 
 const PAYMENT_COLORS: Record<string, string> = {
-  PIX: "#10B981", Dinheiro: "#F59E0B", Débito: "#3B82F6", "Débito": "#3B82F6",
-  Crédito: "#8B5CF6", "Crédito": "#8B5CF6", Cartão: "#8B5CF6",
+  PIX: "#10B981", Dinheiro: "#F59E0B", Débito: "#3B82F6",
+  Crédito: "#8B5CF6", Cartão: "#8B5CF6",
 };
 const EXPENSE_COLORS = ["#F59E0B", "#3B82F6", "#8B5CF6", "#06B6D4", "#EF4444", "#64748B", "#10B981", "#EC4899"];
 const DAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
