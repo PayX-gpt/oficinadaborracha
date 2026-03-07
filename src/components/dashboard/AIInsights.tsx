@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
-import { Sparkles, AlertTriangle, TrendingUp, BarChart3, Lightbulb } from "lucide-react";
-import { PiggyBank } from "lucide-react";
+import { Sparkles, AlertTriangle, TrendingUp, BarChart3, Lightbulb, PiggyBank, Bot } from "lucide-react";
 import { mockAIInsights } from "@/lib/mockDashboardData";
 
 const typeConfig = {
@@ -17,7 +16,7 @@ const AIInsights = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 1, duration: 0.4 }}
-      className="rounded-2xl p-6 transition-all duration-300"
+      className="rounded-2xl p-4 md:p-6 transition-all duration-300"
       style={{
         background: "rgba(14,20,35,0.85)",
         backdropFilter: "blur(16px)",
@@ -29,7 +28,8 @@ const AIInsights = () => {
         <motion.div animate={{ rotate: [0, 15, -15, 0] }} transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}>
           <Sparkles className="h-4 w-4 text-primary" />
         </motion.div>
-        <h3 className="text-[11px] uppercase tracking-[0.05em] text-muted-foreground font-medium">🤖 Inteligência Artificial — Análise do Período</h3>
+        <Bot className="h-4 w-4 text-muted-foreground" />
+        <h3 className="text-[11px] uppercase tracking-[0.05em] text-muted-foreground font-medium">Inteligência Artificial — Análise do Período</h3>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
@@ -50,7 +50,10 @@ const AIInsights = () => {
               </div>
               <p className="text-sm font-medium text-foreground">{insight.title}</p>
               <p className="text-xs text-muted-foreground leading-relaxed">{insight.desc}</p>
-              <p className="text-[11px] text-primary">💡 {insight.action}</p>
+              <p className="text-[11px] text-primary flex items-center gap-1">
+                <Lightbulb className="h-3 w-3" />
+                {insight.action}
+              </p>
             </motion.div>
           );
         })}

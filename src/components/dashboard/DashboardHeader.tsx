@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Building2 } from "lucide-react";
 
 interface DashboardHeaderProps {
   selectedBranch: string;
@@ -8,7 +9,7 @@ interface DashboardHeaderProps {
 }
 
 const branches = [
-  { id: "all", label: "🏢 Todas as Filiais" },
+  { id: "all", label: "Todas as Filiais", icon: true },
   { id: "centro", label: "Filial Centro" },
   { id: "norte", label: "Filial Norte" },
   { id: "sul", label: "Filial Sul" },
@@ -19,9 +20,7 @@ const periods = ["Hoje", "Ontem", "7 Dias", "30 Dias", "Este Mês", "Mês Anteri
 const DashboardHeader = ({ selectedBranch, onBranchChange, selectedPeriod, onPeriodChange }: DashboardHeaderProps) => {
   return (
     <div className="space-y-4">
-      {/* Top row */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Status */}
         <div className="flex items-center gap-2">
           <span className="relative flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
@@ -32,7 +31,6 @@ const DashboardHeader = ({ selectedBranch, onBranchChange, selectedPeriod, onPer
           <span className="text-xs text-muted-foreground">47 lançamentos hoje</span>
         </div>
 
-        {/* Period chips */}
         <div className="flex flex-wrap gap-1.5">
           {periods.map((p) => (
             <button
@@ -50,13 +48,12 @@ const DashboardHeader = ({ selectedBranch, onBranchChange, selectedPeriod, onPer
         </div>
       </div>
 
-      {/* Branch tabs */}
       <div className="flex gap-1 p-1 rounded-xl bg-secondary/30 backdrop-blur-sm border border-border/50 overflow-x-auto">
         {branches.map((b) => (
           <button
             key={b.id}
             onClick={() => onBranchChange(b.id)}
-            className={`relative px-4 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all duration-300 ${
+            className={`relative px-4 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all duration-300 flex items-center gap-1.5 ${
               selectedBranch === b.id ? "text-primary" : "text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -68,12 +65,14 @@ const DashboardHeader = ({ selectedBranch, onBranchChange, selectedPeriod, onPer
                 transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
               />
             )}
-            <span className="relative z-10">{b.label}</span>
+            <span className="relative z-10 flex items-center gap-1.5">
+              {b.icon && <Building2 className="h-3.5 w-3.5" />}
+              {b.label}
+            </span>
           </button>
         ))}
       </div>
 
-      {/* Comparison banner */}
       <p className="text-[11px] text-muted-foreground">
         Comparando com: {selectedPeriod === "Hoje" ? "ontem" : selectedPeriod === "7 Dias" ? "7 dias anteriores" : "período anterior equivalente"}
       </p>

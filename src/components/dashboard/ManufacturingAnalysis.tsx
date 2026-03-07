@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Factory } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, ComposedChart } from "recharts";
 import { mockManufacturing, formatCurrency } from "@/lib/mockDashboardData";
 
@@ -19,7 +20,7 @@ const ManufacturingAnalysis = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.9, duration: 0.4 }}
-      className="rounded-2xl p-6 transition-all duration-300"
+      className="rounded-2xl p-4 md:p-6 transition-all duration-300"
       style={{
         background: "rgba(14,20,35,0.85)",
         backdropFilter: "blur(16px)",
@@ -27,7 +28,10 @@ const ManufacturingAnalysis = () => {
         boxShadow: "0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03)",
       }}
     >
-      <h3 className="text-[11px] uppercase tracking-[0.05em] text-muted-foreground font-medium mb-4">🏭 Análise de Fabricação de Borrachas</h3>
+      <h3 className="text-[11px] uppercase tracking-[0.05em] text-muted-foreground font-medium mb-4 flex items-center gap-2">
+        <Factory className="h-4 w-4 text-primary" />
+        Análise de Fabricação de Borrachas
+      </h3>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ResponsiveContainer width="100%" height={220}>
           <ComposedChart data={m.timeline}>

@@ -63,12 +63,14 @@ export const mockSocios = [
   { nome: "Carlos", filiais: "Norte, Sul", percent: 25, valorBruto: 3000, retiradas: 2000, saldo: 1000 },
 ];
 
+export type BadgeType = "flame" | "gem" | "zap";
+
 export const mockTopServices = [
-  { pos: 1, nome: "Bucha Bandeja Dianteira", veiculo: "Toyota Corolla", qty: 28, receita: 8400, custo: 1260, margem: 85, lucro: 7140, badge: ["🔥", "💎"] },
-  { pos: 2, nome: "Coxim Amortecedor", veiculo: "Honda Civic", qty: 22, receita: 7150, custo: 1430, margem: 80, lucro: 5720, badge: ["🔥"] },
-  { pos: 3, nome: "Bucha Estabilizadora", veiculo: "VW Gol", qty: 18, receita: 3600, custo: 540, margem: 85, lucro: 3060, badge: ["💎"] },
-  { pos: 4, nome: "Batente Amortecedor", veiculo: "Hyundai HB20", qty: 15, receita: 3750, custo: 750, margem: 80, lucro: 3000, badge: [] },
-  { pos: 5, nome: "Coifa Homocinetica", veiculo: "Fiat Argo", qty: 12, receita: 4200, custo: 1260, margem: 70, lucro: 2940, badge: ["⚡"] },
+  { pos: 1, nome: "Bucha Bandeja Dianteira", veiculo: "Toyota Corolla", qty: 28, receita: 8400, custo: 1260, margem: 85, lucro: 7140, badge: ["flame", "gem"] as BadgeType[] },
+  { pos: 2, nome: "Coxim Amortecedor", veiculo: "Honda Civic", qty: 22, receita: 7150, custo: 1430, margem: 80, lucro: 5720, badge: ["flame"] as BadgeType[] },
+  { pos: 3, nome: "Bucha Estabilizadora", veiculo: "VW Gol", qty: 18, receita: 3600, custo: 540, margem: 85, lucro: 3060, badge: ["gem"] as BadgeType[] },
+  { pos: 4, nome: "Batente Amortecedor", veiculo: "Hyundai HB20", qty: 15, receita: 3750, custo: 750, margem: 80, lucro: 3000, badge: [] as BadgeType[] },
+  { pos: 5, nome: "Coifa Homocinetica", veiculo: "Fiat Argo", qty: 12, receita: 4200, custo: 1260, margem: 70, lucro: 2940, badge: ["zap"] as BadgeType[] },
 ];
 
 export const mockLowMarginServices = [
@@ -119,14 +121,14 @@ export const mockManufacturing = {
 };
 
 export const mockLiveFeed = [
-  { id: 1, hora: "16:45", operador: "Carlos", tipo: "manual", desc: "Bucha Bandeja — Corolla 2020", valor: 350, pagamento: "PIX", filial: "Centro" },
-  { id: 2, hora: "16:32", operador: "João", tipo: "foto", desc: "Coxim Amortecedor — Civic 2019", valor: 420, pagamento: "Crédito", filial: "Norte" },
-  { id: 3, hora: "16:18", operador: "Pedro", tipo: "despesa", desc: "Compra de borracha natural", valor: -850, pagamento: "PIX", filial: "Centro" },
-  { id: 4, hora: "15:55", operador: "Carlos", tipo: "audio", desc: "Bucha Estabilizadora — Gol 2018", valor: 200, pagamento: "Dinheiro", filial: "Sul" },
-  { id: 5, hora: "15:40", operador: "João", tipo: "manual", desc: "Coifa Homocinetica — Argo 2021", valor: 380, pagamento: "Débito", filial: "Centro" },
-  { id: 6, hora: "15:22", operador: "Pedro", tipo: "foto", desc: "Batente Amortecedor — HB20 2022", valor: 280, pagamento: "PIX", filial: "Norte" },
-  { id: 7, hora: "14:58", operador: "Carlos", tipo: "manual", desc: "Bucha Bandeja — Onix 2020", valor: 320, pagamento: "Dinheiro", filial: "Sul" },
-  { id: 8, hora: "14:32", operador: "João", tipo: "despesa", desc: "Energia Elétrica — Filial Centro", valor: -450, pagamento: "PIX", filial: "Centro" },
+  { id: 1, hora: "16:45", operador: "Carlos", tipo: "manual" as const, desc: "Bucha Bandeja — Corolla 2020", valor: 350, pagamento: "PIX", filial: "Centro" },
+  { id: 2, hora: "16:32", operador: "João", tipo: "foto" as const, desc: "Coxim Amortecedor — Civic 2019", valor: 420, pagamento: "Crédito", filial: "Norte" },
+  { id: 3, hora: "16:18", operador: "Pedro", tipo: "despesa" as const, desc: "Compra de borracha natural", valor: -850, pagamento: "PIX", filial: "Centro" },
+  { id: 4, hora: "15:55", operador: "Carlos", tipo: "audio" as const, desc: "Bucha Estabilizadora — Gol 2018", valor: 200, pagamento: "Dinheiro", filial: "Sul" },
+  { id: 5, hora: "15:40", operador: "João", tipo: "manual" as const, desc: "Coifa Homocinetica — Argo 2021", valor: 380, pagamento: "Débito", filial: "Centro" },
+  { id: 6, hora: "15:22", operador: "Pedro", tipo: "foto" as const, desc: "Batente Amortecedor — HB20 2022", valor: 280, pagamento: "PIX", filial: "Norte" },
+  { id: 7, hora: "14:58", operador: "Carlos", tipo: "manual" as const, desc: "Bucha Bandeja — Onix 2020", valor: 320, pagamento: "Dinheiro", filial: "Sul" },
+  { id: 8, hora: "14:32", operador: "João", tipo: "despesa" as const, desc: "Energia Elétrica — Filial Centro", valor: -450, pagamento: "PIX", filial: "Centro" },
 ];
 
 export const mockAIInsights = [
@@ -138,11 +140,11 @@ export const mockAIInsights = [
 ];
 
 export const mockTransactions = [
-  { id: 1, hora: "16:45", operador: "Carlos", cliente: "José Silva", veiculo: "Corolla 2020", placa: "ABC-1234", tipo: "Serviço", itens: 2, bruto: 350, custo: 52, desconto: 0, taxa: 0, liquido: 350, lucro: 298, margem: 85, pagamento: "PIX", fonte: "manual" },
-  { id: 2, hora: "16:32", operador: "João", cliente: "Maria Santos", veiculo: "Civic 2019", placa: "DEF-5678", tipo: "Serviço", itens: 1, bruto: 420, custo: 84, desconto: 20, taxa: 10.5, liquido: 389.5, lucro: 305.5, margem: 73, pagamento: "Crédito", fonte: "foto" },
-  { id: 3, hora: "16:18", operador: "Pedro", cliente: "—", veiculo: "—", placa: "—", tipo: "Despesa", itens: 0, bruto: 0, custo: 850, desconto: 0, taxa: 0, liquido: -850, lucro: -850, margem: 0, pagamento: "PIX", fonte: "manual" },
-  { id: 4, hora: "15:55", operador: "Carlos", cliente: "Paulo Lima", veiculo: "Gol 2018", placa: "GHI-9012", tipo: "Serviço", itens: 1, bruto: 200, custo: 30, desconto: 0, taxa: 0, liquido: 200, lucro: 170, margem: 85, pagamento: "Dinheiro", fonte: "audio" },
-  { id: 5, hora: "15:40", operador: "João", cliente: "Ana Costa", veiculo: "Argo 2021", placa: "JKL-3456", tipo: "Serviço", itens: 2, bruto: 380, custo: 114, desconto: 0, taxa: 5.7, liquido: 374.3, lucro: 260.3, margem: 69, pagamento: "Débito", fonte: "manual" },
+  { id: 1, hora: "16:45", operador: "Carlos", cliente: "José Silva", veiculo: "Corolla 2020", placa: "ABC-1234", tipo: "Serviço", itens: 2, bruto: 350, custo: 52, desconto: 0, taxa: 0, liquido: 350, lucro: 298, margem: 85, pagamento: "PIX", fonte: "manual" as const },
+  { id: 2, hora: "16:32", operador: "João", cliente: "Maria Santos", veiculo: "Civic 2019", placa: "DEF-5678", tipo: "Serviço", itens: 1, bruto: 420, custo: 84, desconto: 20, taxa: 10.5, liquido: 389.5, lucro: 305.5, margem: 73, pagamento: "Crédito", fonte: "foto" as const },
+  { id: 3, hora: "16:18", operador: "Pedro", cliente: "—", veiculo: "—", placa: "—", tipo: "Despesa", itens: 0, bruto: 0, custo: 850, desconto: 0, taxa: 0, liquido: -850, lucro: -850, margem: 0, pagamento: "PIX", fonte: "manual" as const },
+  { id: 4, hora: "15:55", operador: "Carlos", cliente: "Paulo Lima", veiculo: "Gol 2018", placa: "GHI-9012", tipo: "Serviço", itens: 1, bruto: 200, custo: 30, desconto: 0, taxa: 0, liquido: 200, lucro: 170, margem: 85, pagamento: "Dinheiro", fonte: "audio" as const },
+  { id: 5, hora: "15:40", operador: "João", cliente: "Ana Costa", veiculo: "Argo 2021", placa: "JKL-3456", tipo: "Serviço", itens: 2, bruto: 380, custo: 114, desconto: 0, taxa: 5.7, liquido: 374.3, lucro: 260.3, margem: 69, pagamento: "Débito", fonte: "manual" as const },
 ];
 
 export function formatCurrency(value: number): string {
