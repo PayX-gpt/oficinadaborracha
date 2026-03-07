@@ -117,7 +117,7 @@ const ODBPage = () => {
         {
           id: "welcome",
           type: "odb",
-          content: `Olá${profile?.nome ? `, ${profile.nome}` : ""}! Sou o Agente ODB — seu assistente inteligente.\n\nComo posso ajudar?`,
+          content: `Olá${profile?.nome ? `, ${profile.nome}` : ""}! Sou o Agente ODB — seu assistente inteligente.${filialNome ? `\n\nFilial: **${filialNome}**` : ""}\n\nComo posso ajudar?`,
           timestamp: new Date(),
           buttons: [
             { label: "Enviar foto", value: "action_foto", icon: "camera", variant: "primary" },
