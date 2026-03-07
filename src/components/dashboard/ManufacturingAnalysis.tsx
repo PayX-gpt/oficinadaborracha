@@ -1,10 +1,13 @@
 import { motion } from "framer-motion";
 import { Factory } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, ComposedChart } from "recharts";
-import { mockManufacturing, formatCurrency } from "@/lib/mockDashboardData";
+import type { DashboardData } from "@/hooks/useDashboardData";
 
-const ManufacturingAnalysis = () => {
-  const m = mockManufacturing;
+const formatCurrency = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+
+const ManufacturingAnalysis = ({ data }: { data?: DashboardData }) => {
+  const m = data?.manufacturing ?? { receita: 0, custoMP: 0, margem: 0, pecas: 0, custoMedioPeca: 0, precoMedioCobrado: 0, roi: 0, timeline: [] };
+
   const kpis = [
     { label: "Receita Fabricação", value: formatCurrency(m.receita), color: "text-emerald-500" },
     { label: "Custo Matéria-Prima", value: formatCurrency(m.custoMP), color: "text-red-400" },
@@ -16,18 +19,9 @@ const ManufacturingAnalysis = () => {
   ];
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.9, duration: 0.4 }}
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9, duration: 0.4 }}
       className="rounded-2xl p-4 md:p-6 transition-all duration-300"
-      style={{
-        background: "rgba(14,20,35,0.85)",
-        backdropFilter: "blur(16px)",
-        border: "1px solid rgba(245,158,11,0.15)",
-        boxShadow: "0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03)",
-      }}
-    >
+      style={{ background: "rgba(14,20,35,0.85)", backdropFilter: "blur(16px)", border: "1px solid rgba(245,158,11,0.15)", boxShadow: "0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03)" }}>
       <h3 className="text-[11px] uppercase tracking-[0.05em] text-muted-foreground font-medium mb-4 flex items-center gap-2">
         <Factory className="h-4 w-4 text-primary" />
         Análise de Fabricação de Borrachas
@@ -58,7 +52,6 @@ const ManufacturingAnalysis = () => {
             <Line type="monotone" dataKey="custo" stroke="#EF4444" strokeWidth={2} dot={false} name="Custo MP" />
           </ComposedChart>
         </ResponsiveContainer>
-
         <div className="grid grid-cols-2 gap-2">
           {kpis.map((k) => (
             <div key={k.label} className="rounded-lg p-3 bg-secondary/20 space-y-1">

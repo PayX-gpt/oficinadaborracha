@@ -13,10 +13,12 @@ import ManufacturingAnalysis from "@/components/dashboard/ManufacturingAnalysis"
 import LiveFeed from "@/components/dashboard/LiveFeed";
 import AIInsights from "@/components/dashboard/AIInsights";
 import DetailedTable from "@/components/dashboard/DetailedTable";
+import { useDashboardData } from "@/hooks/useDashboardData";
 
 const Dashboard = () => {
   const [selectedBranch, setSelectedBranch] = useState("all");
   const [selectedPeriod, setSelectedPeriod] = useState("Hoje");
+  const { data } = useDashboardData(selectedPeriod, selectedBranch);
 
   return (
     <div className="space-y-4 pb-24">
@@ -28,15 +30,15 @@ const Dashboard = () => {
             selectedPeriod={selectedPeriod}
             onPeriodChange={setSelectedPeriod}
           />
-          <KPICards />
-          <OperationalMetrics />
-          <FinancialHealth />
-          <PerformanceCharts />
-          <PaymentMethods />
-          <ProfitSplit />
-          <ServiceIntelligence />
-          <HourlyPerformance />
-          <ManufacturingAnalysis />
+          <KPICards data={data} />
+          <OperationalMetrics data={data} />
+          <FinancialHealth data={data} />
+          <PerformanceCharts data={data} />
+          <PaymentMethods data={data} />
+          <ProfitSplit data={data} />
+          <ServiceIntelligence data={data} />
+          <HourlyPerformance data={data} />
+          <ManufacturingAnalysis data={data} />
           <LiveFeed />
           <AIInsights />
           <DetailedTable />

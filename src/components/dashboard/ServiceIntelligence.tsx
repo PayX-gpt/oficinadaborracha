@@ -1,37 +1,24 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, Medal, Award, Flame, Gem, Zap, AlertTriangle } from "lucide-react";
-import { mockTopServices, mockLowMarginServices, mockVehicleRanking, formatCurrency, BadgeType } from "@/lib/mockDashboardData";
+import { Trophy, Medal, Award, AlertTriangle } from "lucide-react";
+import type { DashboardData } from "@/hooks/useDashboardData";
 import type { ComponentType } from "react";
 
+const formatCurrency = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 const tabs = ["Mais Lucrativos", "Menor Margem", "Por Veículo"];
-
 const medalIcons: ComponentType<{ className?: string }>[] = [Trophy, Medal, Award];
 
-const badgeConfig: Record<BadgeType, { icon: ComponentType<{ className?: string }>; label: string; color: string }> = {
-  flame: { icon: Flame, label: "Alta Demanda", color: "text-orange-400 bg-orange-500/10" },
-  gem: { icon: Gem, label: "Alta Margem", color: "text-cyan-400 bg-cyan-500/10" },
-  zap: { icon: Zap, label: "Rápido", color: "text-yellow-400 bg-yellow-500/10" },
-};
-
-const ServiceIntelligence = () => {
+const ServiceIntelligence = ({ data }: { data?: DashboardData }) => {
   const [tab, setTab] = useState("Mais Lucrativos");
+  const topServices = data?.topServices ?? [];
+  const lowMargin = data?.lowMarginServices ?? [];
+  const vehicles = data?.vehicleRanking ?? [];
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.8, duration: 0.4 }}
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8, duration: 0.4 }}
       className="rounded-2xl p-4 md:p-6 transition-all duration-300"
-      style={{
-        background: "rgba(14,20,35,0.85)",
-        backdropFilter: "blur(16px)",
-        border: "1px solid rgba(245,158,11,0.08)",
-        boxShadow: "0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03)",
-      }}
-    >
+      style={{ background: "rgba(14,20,35,0.85)", backdropFilter: "blur(16px)", border: "1px solid rgba(245,158,11,0.08)", boxShadow: "0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03)" }}>
       <h3 className="text-[11px] uppercase tracking-[0.05em] text-muted-foreground font-medium mb-4">Inteligência de Serviços</h3>
-
       <div className="flex gap-1 mb-4 p-1 rounded-lg bg-secondary/30 overflow-x-auto">
         {tabs.map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`relative px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap ${tab === t ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
@@ -45,17 +32,15 @@ const ServiceIntelligence = () => {
         <motion.div key={tab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           {tab === "Mais Lucrativos" && (
             <div className="space-y-2">
-              {mockTopServices.map((s) => {
+              {topServices.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-8">Nenhum serviço no período</p>
+              ) : topServices.map((s) => {
                 const MedalIcon = s.pos <= 3 ? medalIcons[s.pos - 1] : null;
                 const medalColors = ["text-amber-400", "text-slate-400", "text-amber-700"];
                 return (
                   <div key={s.pos} className="rounded-lg p-3 bg-secondary/20 flex flex-col md:flex-row md:items-center gap-3">
                     <div className="flex items-center gap-2 md:w-auto">
-                      {MedalIcon ? (
-                        <MedalIcon className={`h-5 w-5 ${medalColors[s.pos - 1]}`} />
-                      ) : (
-                        <span className="text-sm font-bold text-muted-foreground w-5 text-center">#{s.pos}</span>
-                      )}
+                      {MedalIcon ? <MedalIcon className={`h-5 w-5 ${medalColors[s.pos - 1]}`} /> : <span className="text-sm font-bold text-muted-foreground w-5 text-center">#{s.pos}</span>}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground">{s.nome}</p>
@@ -67,18 +52,6 @@ const ServiceIntelligence = () => {
                       <span className="text-emerald-500">{s.margem}%</span>
                       <span className="text-primary font-medium">{formatCurrency(s.lucro)}</span>
                     </div>
-                    <div className="flex gap-1">
-                      {s.badge.map((b, i) => {
-                        const cfg = badgeConfig[b];
-                        const BadgeIcon = cfg.icon;
-                        return (
-                          <span key={i} className={`px-1.5 py-0.5 rounded text-[10px] flex items-center gap-1 ${cfg.color}`}>
-                            <BadgeIcon className="h-3 w-3" />
-                            <span className="hidden sm:inline">{cfg.label}</span>
-                          </span>
-                        );
-                      })}
-                    </div>
                   </div>
                 );
               })}
@@ -87,14 +60,15 @@ const ServiceIntelligence = () => {
 
           {tab === "Menor Margem" && (
             <div className="space-y-2">
-              {mockLowMarginServices.map((s) => (
+              {lowMargin.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-8">Nenhum serviço com margem baixa</p>
+              ) : lowMargin.map((s) => (
                 <div key={s.pos} className="rounded-lg p-3 bg-red-500/5 border border-red-500/10 flex flex-col md:flex-row md:items-center gap-3">
                   <span className="text-lg text-red-400 font-bold">#{s.pos}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground">{s.nome}</p>
                     <p className="text-[11px] text-red-400 flex items-center gap-1">
-                      <AlertTriangle className="h-3 w-3" />
-                      Avaliar Preço — Margem de apenas {s.margem}%
+                      <AlertTriangle className="h-3 w-3" />Avaliar Preço — Margem de apenas {s.margem}%
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-3 text-[11px]">
@@ -110,28 +84,32 @@ const ServiceIntelligence = () => {
 
           {tab === "Por Veículo" && (
             <div className="overflow-x-auto -mx-4 md:mx-0">
-              <table className="w-full text-xs min-w-[400px]">
-                <thead>
-                  <tr className="text-muted-foreground border-b border-border/50">
-                    <th className="text-left py-2 font-medium">Veículo</th>
-                    <th className="text-right py-2 font-medium">Serviços</th>
-                    <th className="text-right py-2 font-medium">Receita</th>
-                    <th className="text-right py-2 font-medium">Ticket</th>
-                    <th className="text-left py-2 font-medium pl-4 hidden sm:table-cell">Serviço Comum</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {mockVehicleRanking.map((v) => (
-                    <tr key={v.veiculo} className="border-b border-border/30">
-                      <td className="py-2 text-foreground font-medium">{v.veiculo}</td>
-                      <td className="py-2 text-right text-foreground">{v.servicos}</td>
-                      <td className="py-2 text-right text-foreground">{formatCurrency(v.receita)}</td>
-                      <td className="py-2 text-right text-foreground">{formatCurrency(v.ticket)}</td>
-                      <td className="py-2 text-left pl-4 text-muted-foreground hidden sm:table-cell">{v.servicoComum}</td>
+              {vehicles.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-8">Nenhum veículo no período</p>
+              ) : (
+                <table className="w-full text-xs min-w-[400px]">
+                  <thead>
+                    <tr className="text-muted-foreground border-b border-border/50">
+                      <th className="text-left py-2 font-medium">Veículo</th>
+                      <th className="text-right py-2 font-medium">Serviços</th>
+                      <th className="text-right py-2 font-medium">Receita</th>
+                      <th className="text-right py-2 font-medium">Ticket</th>
+                      <th className="text-left py-2 font-medium pl-4 hidden sm:table-cell">Serviço Comum</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {vehicles.map((v) => (
+                      <tr key={v.veiculo} className="border-b border-border/30">
+                        <td className="py-2 text-foreground font-medium">{v.veiculo}</td>
+                        <td className="py-2 text-right text-foreground">{v.servicos}</td>
+                        <td className="py-2 text-right text-foreground">{formatCurrency(v.receita)}</td>
+                        <td className="py-2 text-right text-foreground">{formatCurrency(v.ticket)}</td>
+                        <td className="py-2 text-left pl-4 text-muted-foreground hidden sm:table-cell">{v.servicoComum}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           )}
         </motion.div>
