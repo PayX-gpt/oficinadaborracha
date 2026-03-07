@@ -29,17 +29,17 @@ const Dashboard = () => {
   });
 
   return (
-    <div className="space-y-4 pb-24">
+    <div className="space-y-3 md:space-y-4 pb-24 min-w-0">
       <AnimatePresence mode="wait">
-        <motion.div key={`${selectedBranch}-${selectedPeriod}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="space-y-4">
-          <div className="flex items-center justify-between">
+        <motion.div key={`${selectedBranch}-${selectedPeriod}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="space-y-3 md:space-y-4">
+          <div className="flex flex-col gap-3">
             <DashboardHeader
               selectedBranch={selectedBranch}
               onBranchChange={setSelectedBranch}
               selectedPeriod={selectedPeriod}
               onPeriodChange={setSelectedPeriod}
             />
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {selectedBranch !== "all" ? (
                 <FechamentoDiario filialId={selectedBranch} filialNome={filiais.find(f => f.id === selectedBranch)?.nome || ""} />
               ) : filiais.map(f => (

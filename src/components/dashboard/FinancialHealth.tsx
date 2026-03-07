@@ -25,10 +25,10 @@ const FinancialHealth = ({ data }: { data?: DashboardData }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.4 }}
-      className="rounded-2xl p-6 transition-all duration-300"
+      className="rounded-xl md:rounded-2xl p-3 md:p-6 transition-all duration-300"
       style={{ background: "rgba(14,20,35,0.85)", backdropFilter: "blur(16px)", border: "1px solid rgba(245,158,11,0.15)", boxShadow: "0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03)" }}>
       <h3 className="text-[11px] uppercase tracking-[0.05em] text-muted-foreground font-medium mb-4">Saúde Financeira da Empresa</h3>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
         <div className="text-center space-y-3">
           <div className="relative w-32 h-16 mx-auto">
             <svg viewBox="0 0 120 60" className="w-full h-full">
