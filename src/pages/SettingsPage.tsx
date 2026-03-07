@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Building2, Users, Percent, LogOut, Loader2, Plus, Trash2, Save, UserCheck, Briefcase, Calendar } from "lucide-react";
+import { Building2, Users, Percent, LogOut, Loader2, Plus, Trash2, Save, UserCheck, Briefcase, Calendar, DollarSign, Edit2, Check, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -39,6 +39,14 @@ const SettingsPage = () => {
   const [newFuncCargo, setNewFuncCargo] = useState("");
   const [newFuncSalario, setNewFuncSalario] = useState("");
   const [newFuncFilial, setNewFuncFilial] = useState("");
+  // Custos Fixos
+  const [newCFDesc, setNewCFDesc] = useState("");
+  const [newCFValor, setNewCFValor] = useState("");
+  const [newCFCategoria, setNewCFCategoria] = useState("Aluguel");
+  const [newCFFilial, setNewCFFilial] = useState("");
+  const [newCFDia, setNewCFDia] = useState("5");
+  const [editingCF, setEditingCF] = useState<string | null>(null);
+  const [editCFValor, setEditCFValor] = useState("");
 
   const isAdmin = profile?.role === "admin";
 
@@ -60,6 +68,11 @@ const SettingsPage = () => {
   const { data: funcionarios = [] } = useQuery({
     queryKey: ["funcionarios"],
     queryFn: async () => { const { data } = await supabase.from("funcionarios").select("*").order("nome"); return data || []; },
+  });
+
+  const { data: custosFixos = [] } = useQuery({
+    queryKey: ["custos-fixos"],
+    queryFn: async () => { const { data } = await supabase.from("custos_fixos").select("*").order("categoria").order("descricao"); return data || []; },
   });
 
   const { data: pagamentos = [] } = useQuery({
