@@ -1,7 +1,8 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, ClipboardList, Settings, Sparkles, Users, User, MessageSquare } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Settings, Users, User, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth, UserRole } from "@/hooks/useAuth";
+import odbLogo from "@/assets/odb-logo.png";
 
 interface NavItem {
   path: string;
@@ -10,23 +11,28 @@ interface NavItem {
   highlight?: boolean;
 }
 
+// Placeholder icon for ODB (logo is used directly in the highlight button)
+const ODBIcon = ({ className }: { className?: string }) => (
+  <img src={odbLogo} alt="ODB" className={className} style={{ objectFit: "contain" }} />
+);
+
 const adminNav: NavItem[] = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { path: "/chat-financeiro", label: "Chat IA", icon: MessageSquare },
-  { path: "/odb", label: "ODB", icon: Sparkles, highlight: true },
+  { path: "/odb", label: "ODB", icon: ODBIcon, highlight: true },
   { path: "/history", label: "Histórico", icon: ClipboardList },
   { path: "/settings", label: "Config", icon: Settings },
 ];
 
 const gerenteNav: NavItem[] = [
   { path: "/dashboard", label: "Resumo", icon: LayoutDashboard },
-  { path: "/odb", label: "ODB", icon: Sparkles, highlight: true },
+  { path: "/odb", label: "ODB", icon: ODBIcon, highlight: true },
   { path: "/history", label: "Serviços", icon: ClipboardList },
   { path: "/settings", label: "Config", icon: Settings },
 ];
 
 const operadorNav: NavItem[] = [
-  { path: "/odb", label: "ODB", icon: Sparkles, highlight: true },
+  { path: "/odb", label: "ODB", icon: ODBIcon, highlight: true },
   { path: "/history", label: "Meus Lanç.", icon: ClipboardList },
   { path: "/perfil", label: "Perfil", icon: User },
 ];
@@ -71,12 +77,12 @@ const BottomNav = () => {
               >
                 <motion.div
                   whileTap={{ scale: 0.9 }}
-                  className="flex h-14 w-14 items-center justify-center rounded-full bg-primary"
+                  className="flex h-14 w-14 items-center justify-center rounded-full bg-background border-2 border-primary overflow-hidden"
                   style={{ boxShadow: "0 0 24px rgba(245,158,11,0.35)" }}
                   animate={{ boxShadow: ["0 0 20px rgba(245,158,11,0.25)", "0 0 30px rgba(245,158,11,0.45)", "0 0 20px rgba(245,158,11,0.25)"] }}
                   transition={{ duration: 2, repeat: Infinity }}
                 >
-                  <Icon className="h-6 w-6 text-primary-foreground" />
+                  <img src={odbLogo} alt="ODB" className="h-10 w-10 object-contain" />
                 </motion.div>
                 <span className="mt-1 text-[9px] font-bold text-primary">{item.label}</span>
               </button>

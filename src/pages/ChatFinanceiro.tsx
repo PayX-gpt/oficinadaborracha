@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, Send, Loader2, Trash2, Sparkles, TrendingUp, PiggyBank, BarChart3, HelpCircle } from "lucide-react";
+import { Bot, Send, Loader2, Trash2, TrendingUp, PiggyBank, BarChart3, HelpCircle } from "lucide-react";
+import odbLogo from "@/assets/odb-logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
@@ -92,8 +93,8 @@ const ChatFinanceiro = () => {
                 transition={{ duration: 3, repeat: Infinity }}
                 className="absolute inset-0 rounded-full bg-primary/20 blur-xl"
               />
-              <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 border border-primary/20">
-                <Sparkles className="h-10 w-10 text-primary" />
+              <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 border border-primary/20 overflow-hidden">
+                <img src={odbLogo} alt="ODB" className="h-16 w-16 object-contain" />
               </div>
             </div>
             <div className="text-center space-y-1">

@@ -1,7 +1,8 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, ClipboardList, Settings, Sparkles, Users, User, LogOut, MessageSquare, UserCircle } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Settings, Users, User, LogOut, MessageSquare, UserCircle } from "lucide-react";
 import { useAuth, UserRole } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import odbLogo from "@/assets/odb-logo.png";
 import { toast } from "sonner";
 
 interface NavItem {
@@ -9,6 +10,10 @@ interface NavItem {
   label: string;
   icon: any;
 }
+
+const ODBIcon = ({ className }: { className?: string }) => (
+  <img src={odbLogo} alt="ODB" className={className} style={{ objectFit: "contain" }} />
+);
 
 function getNavItems(role: UserRole): NavItem[] {
   switch (role) {
@@ -18,20 +23,20 @@ function getNavItems(role: UserRole): NavItem[] {
         { path: "/chat-financeiro", label: "Chat IA", icon: MessageSquare },
         { path: "/clientes", label: "Clientes", icon: UserCircle },
         { path: "/equipe", label: "Equipe", icon: Users },
-        { path: "/odb", label: "Agente ODB", icon: Sparkles },
+        { path: "/odb", label: "Agente ODB", icon: ODBIcon },
         { path: "/history", label: "Histórico", icon: ClipboardList },
         { path: "/settings", label: "Configurações", icon: Settings },
       ];
     case "gerente":
       return [
         { path: "/dashboard", label: "Resumo", icon: LayoutDashboard },
-        { path: "/odb", label: "Agente ODB", icon: Sparkles },
+        { path: "/odb", label: "Agente ODB", icon: ODBIcon },
         { path: "/history", label: "Serviços", icon: ClipboardList },
         { path: "/settings", label: "Config", icon: Settings },
       ];
     default:
       return [
-        { path: "/odb", label: "Agente ODB", icon: Sparkles },
+        { path: "/odb", label: "Agente ODB", icon: ODBIcon },
         { path: "/history", label: "Meus Lançamentos", icon: ClipboardList },
         { path: "/perfil", label: "Perfil", icon: User },
       ];
