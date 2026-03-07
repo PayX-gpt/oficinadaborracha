@@ -45,16 +45,18 @@ interface ODBCard {
 }
 
 const despesaCategorias = [
-  { icon: "🔧", label: "Peças/Fornecedor" },
-  { icon: "🧱", label: "Matéria-Prima" },
-  { icon: "🏠", label: "Aluguel" },
-  { icon: "⚡", label: "Energia/Água" },
-  { icon: "👷", label: "Salário" },
-  { icon: "🍽️", label: "Alimentação" },
-  { icon: "🔨", label: "Ferramentas" },
-  { icon: "🏛️", label: "Imposto/Contador" },
-  { icon: "💰", label: "Aporte Sócio" },
-  { icon: "📦", label: "Outros" },
+  // Custos diretos (peças/serviço)
+  { icon: "🔧", label: "Peças/Fornecedor", group: "direto" },
+  { icon: "🧱", label: "Matéria-Prima", group: "direto" },
+  { icon: "🔨", label: "Ferramentas", group: "direto" },
+  // Custos operacionais (fixos/administrativos)
+  { icon: "🏠", label: "Aluguel", group: "operacional" },
+  { icon: "⚡", label: "Energia/Água", group: "operacional" },
+  { icon: "👷", label: "Salário", group: "operacional" },
+  { icon: "🍽️", label: "Alimentação", group: "operacional" },
+  { icon: "🏛️", label: "Imposto/Contador", group: "operacional" },
+  { icon: "💰", label: "Aporte Sócio", group: "operacional" },
+  { icon: "📦", label: "Outros", group: "operacional" },
 ];
 
 const ODBPage = () => {
@@ -74,6 +76,7 @@ const ODBPage = () => {
   const chunksRef = useRef<Blob[]>([]);
   const recognitionRef = useRef<any>(null);
   const [transcript, setTranscript] = useState("");
+  const lastCardRef = useRef<{ card: ODBCard | null; veiculo: any }>(null);
 
   const isGerente = profile?.role === "gerente";
 
@@ -215,7 +218,7 @@ const ODBPage = () => {
       });
     } else if (["pix", "dinheiro", "debito", "credito", "misto"].includes(button.value)) {
       const metodo = button.label;
-      const resumo = `Salvo! 🎉\n\n💰 Total via ${metodo}\n${!isGerente ? "📊 Margem calculada automaticamente\n⚡ Ganho/hora registrado" : ""}\n\n💪 Bom serviço!`;
+      const resumo = `Salvo! 🎉\n\n💰 Total via ${metodo}\n${!isGerente ? "📊 Margem calculada automaticamente\n⚡ Ganho/hora registrado" : ""}\n\n🧠 Aprendendo com este serviço...\n💪 Bom serviço!`;
       addMessage({
         type: "odb",
         content: resumo,
@@ -224,6 +227,33 @@ const ODBPage = () => {
           { label: "🔄 Novo Lançamento", value: "novo", variant: "primary" },
         ],
       });
+
+      // Trigger learning: save confirmed items to knowledge base
+      if (lastCardRef.current?.card) {
+        const allItems = [
+          ...(lastCardRef.current.card.itens_dianteira || []),
+          ...(lastCardRef.current.card.itens_traseira || []),
+        ].filter(i => i.valor > 0);
+
+        if (allItems.length > 0) {
+          supabase.functions.invoke("odb-processar", {
+            body: {
+              salvar_aprendizado: true,
+              itens_confirmados: allItems.map(i => ({
+                descricao: i.descricao,
+                tipo: i.tipo,
+                valor_cobrado: i.valor,
+                custo: 0, // User didn't specify cost in chat flow
+              })),
+              veiculo_info: lastCardRef.current.veiculo,
+            },
+          }).then(() => {
+            console.log("ODB: Aprendizado salvo com sucesso");
+          }).catch(err => {
+            console.error("ODB learning error:", err);
+          });
+        }
+      }
     } else if (button.value === "novo") {
       setMessages([{
         id: crypto.randomUUID(),
@@ -297,6 +327,12 @@ const ODBPage = () => {
             { label: "⏳ Entrada", value: "entrada", variant: "default" },
             { label: "💰 Pagamento", value: "pagamento", variant: "primary" },
           ];
+
+      // Store card data for learning when confirmed
+      lastCardRef.current = {
+        card,
+        veiculo: result.veiculo ? { marca: result.veiculo.marca, modelo: result.veiculo.modelo } : null,
+      };
 
       addMessage({ type: "odb", content: extraContent, card, buttons });
     } catch (e: any) {
@@ -509,8 +545,22 @@ const ODBPage = () => {
                 <X className="h-4 w-4" />
               </button>
             </div>
+            <p className="text-[9px] font-bold text-red-400/70 uppercase tracking-widest mb-1">Custos Diretos</p>
+            <div className="grid grid-cols-2 gap-1.5 mb-2">
+              {despesaCategorias.filter(c => c.group === "direto").map((cat) => (
+                <button
+                  key={cat.label}
+                  onClick={() => handleDespesaSelect(cat.label)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/5 border border-red-500/15 text-[11px] text-foreground hover:bg-red-500/10 transition-all active:scale-95 text-left"
+                >
+                  <span className="text-base">{cat.icon}</span>
+                  <span className="truncate">{cat.label}</span>
+                </button>
+              ))}
+            </div>
+            <p className="text-[9px] font-bold text-muted-foreground/70 uppercase tracking-widest mb-1">Operacionais</p>
             <div className="grid grid-cols-2 gap-1.5">
-              {despesaCategorias.map((cat) => (
+              {despesaCategorias.filter(c => c.group === "operacional").map((cat) => (
                 <button
                   key={cat.label}
                   onClick={() => handleDespesaSelect(cat.label)}
