@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
-import { Bell, X, Check, AlertTriangle, TrendingUp, Info, CheckCircle } from "lucide-react";
+import { useState } from "react";
+import { Bell, X, Check, AlertTriangle, TrendingUp, Info, CheckCircle, ChevronDown, LogOut, User } from "lucide-react";
 import odbLogo from "@/assets/odb-logo.png";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 const typeConfig: Record<string, { icon: any; color: string; bg: string }> = {
   alerta: { icon: AlertTriangle, color: "text-red-400", bg: "bg-red-500/10" },
@@ -14,9 +15,12 @@ const typeConfig: Record<string, { icon: any; color: string; bg: string }> = {
 };
 
 const AppHeader = () => {
-  const [open, setOpen] = useState(false);
-  const { user } = useAuth();
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [filialOpen, setFilialOpen] = useState(false);
+  const { user, profile, signOut } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const isAdmin = profile?.role === "admin";
 
   const { data: notifications = [] } = useQuery({
     queryKey: ["notificacoes"],
@@ -31,7 +35,17 @@ const AppHeader = () => {
     refetchInterval: 30000,
   });
 
+  const { data: filiais = [] } = useQuery({
+    queryKey: ["filiais-header"],
+    queryFn: async () => {
+      const { data } = await supabase.from("filiais").select("id, nome").eq("ativa", true).order("nome");
+      return data || [];
+    },
+    staleTime: 60000,
+  });
+
   const unreadCount = notifications.filter((n: any) => !n.lida).length;
+  const filialNome = filiais.find(f => f.id === profile?.filial_id)?.nome || (isAdmin ? "Todas Filiais" : "—");
 
   const markRead = async (id: string) => {
     await supabase.from("notificacoes").update({ lida: true }).eq("id", id);
@@ -46,55 +60,91 @@ const AppHeader = () => {
     queryClient.invalidateQueries({ queryKey: ["notificacoes"] });
   };
 
+  const initials = (profile?.nome || "U").slice(0, 2).toUpperCase();
+
   return (
-    <header
-      className="fixed top-0 left-0 right-0 z-50 flex h-12 items-center justify-between border-b px-4"
-      style={{
-        background: "rgba(7,11,20,0.92)",
-        backdropFilter: "blur(16px)",
-        borderColor: "rgba(245,158,11,0.08)",
-      }}
-    >
-      <div className="flex items-center gap-2.5">
-        <div className="h-7 w-7 rounded-lg overflow-hidden flex items-center justify-center" style={{ boxShadow: "0 0 12px rgba(245,158,11,0.2)" }}>
-          <img src={odbLogo} alt="ODB" className="h-7 w-7 object-contain" />
+    <header className="fixed top-0 left-0 right-0 z-50 flex h-14 items-center justify-between border-b border-border/10 px-3 md:px-4 bg-background/92 backdrop-blur-xl">
+      {/* Left: Logo */}
+      <div className="flex items-center gap-2">
+        <div className="h-8 w-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0" style={{ boxShadow: "0 0 12px hsl(var(--primary) / 0.2)" }}>
+          <img src={odbLogo} alt="ODB" className="h-8 w-8 object-contain" />
         </div>
-        <span className="text-sm font-semibold text-foreground hidden sm:block">Oficina da Borracha</span>
+        <span className="text-sm font-bold text-foreground hidden md:block">Oficina da Borracha</span>
       </div>
 
+      {/* Center: Filial name */}
+      <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
+        {isAdmin ? (
+          <div className="relative">
+            <button
+              onClick={() => setFilialOpen(!filialOpen)}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-foreground hover:bg-secondary/30 transition-colors"
+            >
+              {filialNome}
+              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+            </button>
+            <AnimatePresence>
+              {filialOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setFilialOpen(false)} />
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    className="absolute left-1/2 -translate-x-1/2 top-8 z-50 w-44 rounded-xl border border-border/20 bg-card/95 backdrop-blur-xl shadow-2xl overflow-hidden"
+                  >
+                    {filiais.map(f => (
+                      <button
+                        key={f.id}
+                        onClick={() => { setFilialOpen(false); }}
+                        className="w-full text-left px-3 py-2 text-xs text-foreground hover:bg-secondary/30 transition-colors"
+                      >
+                        {f.nome}
+                      </button>
+                    ))}
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+        ) : (
+          <span className="text-xs font-semibold text-foreground">{filialNome}</span>
+        )}
+      </div>
+
+      {/* Right: Status + Bell + Avatar */}
       <div className="flex items-center gap-1.5">
-        <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-500/10">
+        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-500/10">
           <span className="relative flex h-1.5 w-1.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
           </span>
-          <span className="text-[10px] text-emerald-400 font-medium hidden sm:block">Online</span>
         </div>
 
+        {/* Notifications */}
         <div className="relative">
           <motion.button
             whileTap={{ scale: 0.9 }}
-            onClick={() => setOpen(!open)}
+            onClick={() => setNotifOpen(!notifOpen)}
             className="relative flex items-center justify-center h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors"
           >
             <Bell className="h-4 w-4" />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+              <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
           </motion.button>
 
           <AnimatePresence>
-            {open && (
+            {notifOpen && (
               <>
-                <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+                <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />
                 <motion.div
                   initial={{ opacity: 0, y: -8, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                  className="absolute right-0 top-10 z-50 w-80 max-h-96 overflow-y-auto rounded-xl border shadow-2xl"
-                  style={{ background: "rgba(14,20,35,0.97)", borderColor: "rgba(245,158,11,0.12)", backdropFilter: "blur(20px)" }}
+                  className="absolute right-0 top-10 z-50 w-80 max-h-96 overflow-y-auto rounded-xl border border-border/20 bg-card/97 backdrop-blur-xl shadow-2xl"
                 >
                   <div className="flex items-center justify-between p-3 border-b border-border/10">
                     <span className="text-xs font-bold text-foreground">Notificações</span>
@@ -138,6 +188,11 @@ const AppHeader = () => {
               </>
             )}
           </AnimatePresence>
+        </div>
+
+        {/* Avatar */}
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-primary text-[11px] font-bold border border-primary/20">
+          {initials}
         </div>
       </div>
     </header>

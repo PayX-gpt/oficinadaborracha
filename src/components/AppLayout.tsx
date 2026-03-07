@@ -36,8 +36,8 @@ const AppLayout = () => {
       <AppHeader />
       <div className="flex">
         <DesktopSidebar />
-        <main className="flex-1 pt-14 pb-20 md:pb-4 md:pl-60 w-full min-w-0">
-          <div className="mx-auto max-w-5xl p-3 md:p-4">
+        <main className="flex-1 pt-14 pb-20 md:pb-4 md:pl-60 w-full min-w-0 overflow-x-hidden">
+          <div className="mx-auto max-w-5xl p-3 md:p-4" style={{ paddingTop: "0.75rem" }}>
             <Outlet />
           </div>
         </main>
