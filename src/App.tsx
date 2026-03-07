@@ -7,6 +7,8 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Login from "./pages/Login";
 import AppLayout from "./components/AppLayout";
 import Dashboard from "./pages/Dashboard";
+import GerenteDashboard from "./pages/GerenteDashboard";
+import ODBPage from "./pages/ODBPage";
 import Launch from "./pages/Launch";
 import LaunchManual from "./pages/LaunchManual";
 import LaunchPhoto from "./pages/LaunchPhoto";
@@ -30,6 +32,8 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/gerente" element={<GerenteDashboard />} />
+              <Route path="/odb" element={<ODBPage />} />
               <Route path="/launch" element={<Launch />} />
               <Route path="/launch/manual" element={<LaunchManual />} />
               <Route path="/launch/photo" element={<LaunchPhoto />} />
@@ -37,6 +41,8 @@ const App = () => (
               <Route path="/launch/expense" element={<LaunchExpense />} />
               <Route path="/history" element={<History />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/equipe" element={<div className="text-foreground"><h2 className="text-lg font-bold">Equipe</h2><p className="text-xs text-muted-foreground">Em breve — gestão de gerentes e operadores</p></div>} />
+              <Route path="/perfil" element={<div className="text-foreground"><h2 className="text-lg font-bold">Meu Perfil</h2><p className="text-xs text-muted-foreground">Em breve</p></div>} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

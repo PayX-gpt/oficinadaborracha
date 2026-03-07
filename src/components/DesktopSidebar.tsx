@@ -1,18 +1,47 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, PlusCircle, ClipboardList, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Settings, Sparkles, Users, User, LogOut } from "lucide-react";
+import { useAuth, UserRole } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const navItems = [
-  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/launch", label: "Novo Lançamento", icon: PlusCircle },
-  { path: "/history", label: "Histórico", icon: ClipboardList },
-  { path: "/settings", label: "Configurações", icon: Settings },
-];
+interface NavItem {
+  path: string;
+  label: string;
+  icon: any;
+}
+
+function getNavItems(role: UserRole): NavItem[] {
+  switch (role) {
+    case "admin":
+      return [
+        { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+        { path: "/equipe", label: "Equipe", icon: Users },
+        { path: "/odb", label: "Agente ODB", icon: Sparkles },
+        { path: "/history", label: "Histórico", icon: ClipboardList },
+        { path: "/settings", label: "Configurações", icon: Settings },
+      ];
+    case "gerente":
+      return [
+        { path: "/dashboard", label: "Resumo", icon: LayoutDashboard },
+        { path: "/odb", label: "Agente ODB", icon: Sparkles },
+        { path: "/history", label: "Serviços", icon: ClipboardList },
+        { path: "/settings", label: "Config", icon: Settings },
+      ];
+    default:
+      return [
+        { path: "/odb", label: "Agente ODB", icon: Sparkles },
+        { path: "/history", label: "Meus Lançamentos", icon: ClipboardList },
+        { path: "/perfil", label: "Perfil", icon: User },
+      ];
+  }
+}
 
 const DesktopSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { profile } = useAuth();
+  const role = profile?.role || "operador";
+  const navItems = getNavItems(role);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -33,18 +62,26 @@ const DesktopSidebar = () => {
         {navItems.map((item) => {
           const isActive = location.pathname.startsWith(item.path);
           const Icon = item.icon;
+          const isODB = item.path === "/odb";
           return (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
               className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-all ${
-                isActive
+                isODB
+                  ? isActive
+                    ? "bg-primary/20 text-primary border border-primary/25"
+                    : "bg-primary/5 text-primary/80 hover:bg-primary/10 border border-primary/10"
+                  : isActive
                   ? "bg-primary/10 text-primary border border-primary/15"
                   : "text-muted-foreground hover:bg-secondary/30 hover:text-foreground border border-transparent"
               }`}
             >
               <Icon className="h-4 w-4" />
               {item.label}
+              {isODB && (
+                <span className="ml-auto text-[9px] font-bold bg-primary/15 text-primary px-1.5 py-0.5 rounded">IA</span>
+              )}
             </button>
           );
         })}
