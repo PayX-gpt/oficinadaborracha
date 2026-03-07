@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bot, Send, Loader2, Trash2, TrendingUp, PiggyBank, BarChart3, HelpCircle } from "lucide-react";
 import odbLogo from "@/assets/odb-logo.png";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 
@@ -11,12 +10,97 @@ interface Message {
   content: string;
 }
 
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
+
 const quickActions = [
   { icon: TrendingUp, label: "Como está meu faturamento?", prompt: "Como está meu faturamento nos últimos 30 dias? Compare com períodos anteriores se possível." },
   { icon: PiggyBank, label: "Onde posso economizar?", prompt: "Analise minhas despesas e identifique onde posso reduzir custos sem impactar a operação." },
   { icon: BarChart3, label: "Quais serviços mais lucram?", prompt: "Quais são os serviços mais rentáveis e quais têm menor margem? Sugira estratégias." },
   { icon: HelpCircle, label: "Resumo executivo do mês", prompt: "Gere um resumo executivo completo do mês com os principais indicadores, tendências e recomendações." },
 ];
+
+async function streamChat({
+  message,
+  history,
+  onDelta,
+  onDone,
+  onError,
+}: {
+  message: string;
+  history: Message[];
+  onDelta: (text: string) => void;
+  onDone: () => void;
+  onError: (err: string) => void;
+}) {
+  const resp = await fetch(CHAT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+    },
+    body: JSON.stringify({ message, history: history.slice(-10) }),
+  });
+
+  if (!resp.ok) {
+    const data = await resp.json().catch(() => ({}));
+    onError(data.error || "Erro ao processar pergunta");
+    return;
+  }
+
+  if (!resp.body) { onError("Sem resposta"); return; }
+
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let textBuffer = "";
+  let streamDone = false;
+
+  while (!streamDone) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    textBuffer += decoder.decode(value, { stream: true });
+
+    let newlineIndex: number;
+    while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+      let line = textBuffer.slice(0, newlineIndex);
+      textBuffer = textBuffer.slice(newlineIndex + 1);
+
+      if (line.endsWith("\r")) line = line.slice(0, -1);
+      if (line.startsWith(":") || line.trim() === "") continue;
+      if (!line.startsWith("data: ")) continue;
+
+      const jsonStr = line.slice(6).trim();
+      if (jsonStr === "[DONE]") { streamDone = true; break; }
+
+      try {
+        const parsed = JSON.parse(jsonStr);
+        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        if (content) onDelta(content);
+      } catch {
+        textBuffer = line + "\n" + textBuffer;
+        break;
+      }
+    }
+  }
+
+  // Final flush
+  if (textBuffer.trim()) {
+    for (let raw of textBuffer.split("\n")) {
+      if (!raw) continue;
+      if (raw.endsWith("\r")) raw = raw.slice(0, -1);
+      if (raw.startsWith(":") || raw.trim() === "") continue;
+      if (!raw.startsWith("data: ")) continue;
+      const jsonStr = raw.slice(6).trim();
+      if (jsonStr === "[DONE]") continue;
+      try {
+        const parsed = JSON.parse(jsonStr);
+        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        if (content) onDelta(content);
+      } catch { /* ignore */ }
+    }
+  }
+
+  onDone();
+}
 
 const ChatFinanceiro = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -34,28 +118,40 @@ const ChatFinanceiro = () => {
     if (!msg || loading) return;
 
     const userMsg: Message = { role: "user", content: msg };
-    setMessages(prev => [...prev, userMsg]);
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
     setInput("");
     setLoading(true);
 
+    let assistantSoFar = "";
+    const upsertAssistant = (chunk: string) => {
+      assistantSoFar += chunk;
+      setMessages(prev => {
+        const last = prev[prev.length - 1];
+        if (last?.role === "assistant") {
+          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
+        }
+        return [...prev, { role: "assistant", content: assistantSoFar }];
+      });
+    };
+
     try {
-      const { data, error } = await supabase.functions.invoke("ai-chat", {
-        body: {
-          message: msg,
-          history: messages.slice(-10), // Last 10 messages for context
+      await streamChat({
+        message: msg,
+        history: messages,
+        onDelta: (chunk) => upsertAssistant(chunk),
+        onDone: () => setLoading(false),
+        onError: (err) => {
+          toast.error(err);
+          setMessages(prev => [...prev, { role: "assistant", content: "❌ " + err }]);
+          setLoading(false);
         },
       });
-
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      const assistantMsg: Message = { role: "assistant", content: data.reply };
-      setMessages(prev => [...prev, assistantMsg]);
     } catch (err: any) {
-      toast.error(err.message || "Erro ao processar pergunta");
-      setMessages(prev => [...prev, { role: "assistant", content: "❌ Desculpe, ocorreu um erro. Tente novamente." }]);
-    } finally {
+      toast.error(err.message || "Erro de conexão");
+      setMessages(prev => [...prev, { role: "assistant", content: "❌ Erro de conexão. Tente novamente." }]);
       setLoading(false);
+    } finally {
       inputRef.current?.focus();
     }
   };
@@ -67,14 +163,13 @@ const ChatFinanceiro = () => {
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col h-[calc(100vh-8rem)] pb-4">
-      {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div>
           <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
             <Bot className="h-5 w-5 text-primary" />
             Chat Financeiro IA
           </h2>
-          <p className="text-[11px] text-muted-foreground">Pergunte qualquer coisa sobre suas finanças</p>
+          <p className="text-[11px] text-muted-foreground">Respostas em tempo real com streaming</p>
         </div>
         {messages.length > 0 && (
           <button onClick={clearChat} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors">
@@ -83,7 +178,6 @@ const ChatFinanceiro = () => {
         )}
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-3 pr-1 scrollbar-thin scrollbar-thumb-border/30">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full space-y-6">
@@ -100,7 +194,7 @@ const ChatFinanceiro = () => {
             <div className="text-center space-y-1">
               <p className="text-sm font-medium text-foreground">Assistente Financeiro</p>
               <p className="text-xs text-muted-foreground max-w-sm">
-                Analiso seus dados em tempo real. Pergunte sobre faturamento, despesas, margem, tendências ou peça recomendações.
+                Analiso seus dados em tempo real com streaming. Pergunte sobre faturamento, despesas, margem, tendências ou peça recomendações.
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
@@ -148,12 +242,12 @@ const ChatFinanceiro = () => {
                 </motion.div>
               ))}
             </AnimatePresence>
-            {loading && (
+            {loading && messages[messages.length - 1]?.role !== "assistant" && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
                 <div className="flex items-center gap-2 px-4 py-3 rounded-2xl rounded-bl-md"
                   style={{ background: "rgba(14,20,35,0.8)", border: "1px solid rgba(245,158,11,0.1)" }}>
                   <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span className="text-xs text-muted-foreground">Analisando dados...</span>
+                  <span className="text-xs text-muted-foreground">Conectando...</span>
                 </div>
               </motion.div>
             )}
@@ -162,7 +256,6 @@ const ChatFinanceiro = () => {
         )}
       </div>
 
-      {/* Input */}
       <div className="mt-3 flex gap-2">
         <div className="flex-1 relative">
           <input
