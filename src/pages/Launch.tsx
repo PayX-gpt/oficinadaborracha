@@ -1,67 +1,71 @@
 import { useNavigate } from "react-router-dom";
-import { Camera, Mic, Pencil, Receipt } from "lucide-react";
+import { Camera, Mic, Pencil, Receipt, ArrowRight, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 
 const options = [
   {
     path: "/launch/photo",
-    label: "Lançar por Foto",
-    emoji: "📸",
+    label: "Foto",
     icon: Camera,
-    description: "Tire foto do orçamento e a IA extrai os dados",
-    variant: "default" as const,
+    description: "IA extrai dados do orçamento",
+    color: "text-blue-400",
+    bg: "bg-blue-500/10 border-blue-500/20",
+    tag: "IA",
   },
   {
     path: "/launch/audio",
-    label: "Lançar por Áudio",
-    emoji: "🎤",
+    label: "Áudio",
     icon: Mic,
-    description: "Dite o serviço e a IA transcreve tudo",
-    variant: "default" as const,
+    description: "Dite e a IA transcreve",
+    color: "text-violet-400",
+    bg: "bg-violet-500/10 border-violet-500/20",
+    tag: "IA",
   },
   {
     path: "/launch/manual",
-    label: "Lançar Manual",
-    emoji: "✏️",
+    label: "Manual",
     icon: Pencil,
-    description: "Preencha os dados do serviço manualmente",
-    variant: "default" as const,
+    description: "Preencha os dados do serviço",
+    color: "text-primary",
+    bg: "bg-primary/10 border-primary/20",
+    tag: null,
   },
   {
     path: "/launch/expense",
-    label: "Registrar Despesa",
-    emoji: "📋",
+    label: "Despesa",
     icon: Receipt,
-    description: "Registre saídas e custos operacionais",
-    variant: "expense" as const,
+    description: "Registre saídas e custos",
+    color: "text-red-400",
+    bg: "bg-red-500/10 border-red-500/20",
+    tag: null,
   },
 ];
 
 const container = {
   hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { staggerChildren: 0.1 } },
+  show: { opacity: 1, transition: { staggerChildren: 0.06 } },
 };
 
 const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 },
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
 };
 
 const Launch = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <h2 className="text-xl font-bold text-foreground">Novo Lançamento</h2>
-        <p className="text-sm text-muted-foreground">Como deseja registrar?</p>
+        <h2 className="text-lg font-bold text-foreground">Novo Lançamento</h2>
+        <p className="text-xs text-muted-foreground">Selecione o método de registro</p>
       </div>
 
       <motion.div
         variants={container}
         initial="hidden"
         animate="show"
-        className="grid grid-cols-1 gap-4 sm:grid-cols-2"
+        className="space-y-2"
       >
         {options.map((opt) => {
           const Icon = opt.icon;
@@ -69,23 +73,30 @@ const Launch = () => {
             <motion.button
               key={opt.path}
               variants={item}
-              whileTap={{ scale: 0.97 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => navigate(opt.path)}
-              className={`glass-card flex flex-col items-center gap-3 p-6 text-center transition-all hover:border-primary/30 ${
-                opt.variant === "expense" ? "border-destructive/20 hover:border-destructive/40" : ""
-              }`}
+              className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] ${opt.bg}`}
+              style={{
+                background: "rgba(14,20,35,0.7)",
+                backdropFilter: "blur(12px)",
+              }}
             >
-              <div
-                className={`flex h-16 w-16 items-center justify-center rounded-2xl ${
-                  opt.variant === "expense"
-                    ? "bg-destructive/10 text-destructive"
-                    : "bg-primary/10 text-primary"
-                }`}
-              >
-                <Icon className="h-8 w-8" />
+              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${opt.bg}`}>
+                <Icon className={`h-5 w-5 ${opt.color}`} />
               </div>
-              <h3 className="text-base font-semibold text-foreground">{opt.label}</h3>
-              <p className="text-xs text-muted-foreground">{opt.description}</p>
+              <div className="flex-1 text-left min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-foreground">{opt.label}</span>
+                  {opt.tag && (
+                    <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-primary/15 text-primary uppercase tracking-wider">
+                      <Sparkles className="h-2.5 w-2.5" />
+                      {opt.tag}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5">{opt.description}</p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
             </motion.button>
           );
         })}
