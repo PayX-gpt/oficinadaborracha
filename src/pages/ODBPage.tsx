@@ -761,6 +761,39 @@ const ODBPage = () => {
                       </div>
                     </div>
                   )}
+                  {/* Despesa Card */}
+                  {msg.despesaData && (
+                    <div className="mt-3 space-y-2 bg-background/30 rounded-xl p-3 border border-red-500/15">
+                      <div className="flex items-center gap-2">
+                        <Receipt className="h-3.5 w-3.5 text-red-400" />
+                        <span className="font-semibold text-[12px]">Despesa</span>
+                      </div>
+                      <div className="space-y-1 text-[11px]">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Categoria</span>
+                          <span className="text-foreground font-medium">{msg.despesaData.categoria}</span>
+                        </div>
+                        {msg.despesaData.descricao && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Descrição</span>
+                            <span className="text-foreground">{msg.despesaData.descricao}</span>
+                          </div>
+                        )}
+                        {msg.despesaData.valor != null && (
+                          <div className="flex justify-between pt-1 border-t border-red-500/10">
+                            <span className="font-bold text-red-400">VALOR</span>
+                            <span className="font-bold text-foreground tabular-nums">R$ {msg.despesaData.valor.toFixed(2)}</span>
+                          </div>
+                        )}
+                        {msg.despesaData.metodo_pagamento && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Pagamento</span>
+                            <span className="text-foreground">{msg.despesaData.metodo_pagamento}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Buttons */}
                   {msg.buttons && msg.buttons.length > 0 && (
