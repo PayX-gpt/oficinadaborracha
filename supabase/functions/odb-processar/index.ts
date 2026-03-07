@@ -96,7 +96,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { tipo, conteudo, imageBase64, mimeType, observacao, salvar_aprendizado, itens_confirmados, veiculo_info } = await req.json();
+    const { tipo, conteudo, imageBase64, mimeType, observacao, salvar_aprendizado, itens_confirmados, veiculo_info, filial_id, filial_nome } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -113,19 +113,34 @@ serve(async (req) => {
     }
 
     // ── ANALYSIS MODE ──
-    const [sinonimoRes, conhecimentoRes, clientesRes, veiculosRes] = await Promise.all([
+    // Fetch filial info if available
+    let filialInfo = filial_nome || null;
+    if (filial_id && !filialInfo) {
+      const { data: filialData } = await supabase.from("filiais").select("nome").eq("id", filial_id).maybeSingle();
+      filialInfo = filialData?.nome || null;
+    }
+
+    const [sinonimoRes, conhecimentoRes, clientesRes, veiculosRes, filiaisRes] = await Promise.all([
       supabase.from("odb_sinonimos").select("termo_digitado, termo_correto").limit(200),
       supabase.from("odb_conhecimento_pecas").select("descricao_normalizada, veiculo_marca, veiculo_modelo, tipo, valor_medio, custo_medio, margem_media, total_lancamentos").order("total_lancamentos", { ascending: false }).limit(100),
       supabase.from("clientes").select("id, nome, telefone").order("created_at", { ascending: false }).limit(50),
       supabase.from("veiculos").select("id, marca, modelo, placa, ano, cliente_id").order("created_at", { ascending: false }).limit(50),
+      supabase.from("filiais").select("id, nome").eq("ativa", true),
     ]);
 
     const sinonimos = sinonimoRes.data || [];
     const conhecimento = conhecimentoRes.data || [];
     const clientes = clientesRes.data || [];
     const veiculos = veiculosRes.data || [];
+    const todasFiliais = filiaisRes.data || [];
 
     const contextPrompt = `
+FILIAL DO OPERADOR: ${filialInfo ? `${filialInfo}` : "Não identificada"}
+${filial_id ? `ID da filial: ${filial_id}` : ""}
+FILIAIS DISPONÍVEIS: ${todasFiliais.map(f => f.nome).join(", ") || "Nenhuma"}
+
+IMPORTANTE: Sempre que retornar um resumo ou fizer uma pergunta, inclua a filial do operador para contextualizar. Se a filial não estiver identificada, pergunte a qual filial o registro pertence antes de prosseguir.
+
 SINÔNIMOS CONHECIDOS:
 ${sinonimos.map(s => `${s.termo_digitado} → ${s.termo_correto}`).join(", ")}
 
