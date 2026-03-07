@@ -545,8 +545,22 @@ const ODBPage = () => {
                 <X className="h-4 w-4" />
               </button>
             </div>
+            <p className="text-[9px] font-bold text-red-400/70 uppercase tracking-widest mb-1">Custos Diretos</p>
+            <div className="grid grid-cols-2 gap-1.5 mb-2">
+              {despesaCategorias.filter(c => c.group === "direto").map((cat) => (
+                <button
+                  key={cat.label}
+                  onClick={() => handleDespesaSelect(cat.label)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/5 border border-red-500/15 text-[11px] text-foreground hover:bg-red-500/10 transition-all active:scale-95 text-left"
+                >
+                  <span className="text-base">{cat.icon}</span>
+                  <span className="truncate">{cat.label}</span>
+                </button>
+              ))}
+            </div>
+            <p className="text-[9px] font-bold text-muted-foreground/70 uppercase tracking-widest mb-1">Operacionais</p>
             <div className="grid grid-cols-2 gap-1.5">
-              {despesaCategorias.map((cat) => (
+              {despesaCategorias.filter(c => c.group === "operacional").map((cat) => (
                 <button
                   key={cat.label}
                   onClick={() => handleDespesaSelect(cat.label)}
