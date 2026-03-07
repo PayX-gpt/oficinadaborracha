@@ -1,7 +1,8 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, ClipboardList, Settings, Sparkles, Users, User, LogOut, MessageSquare, UserCircle } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Settings, Users, User, LogOut, MessageSquare, UserCircle } from "lucide-react";
 import { useAuth, UserRole } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import odbLogo from "@/assets/odb-logo.png";
 import { toast } from "sonner";
 
 interface NavItem {

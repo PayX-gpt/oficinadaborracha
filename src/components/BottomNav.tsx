@@ -11,23 +11,28 @@ interface NavItem {
   highlight?: boolean;
 }
 
+// Placeholder icon for ODB (logo is used directly in the highlight button)
+const ODBIcon = ({ className }: { className?: string }) => (
+  <img src={odbLogo} alt="ODB" className={className} style={{ objectFit: "contain" }} />
+);
+
 const adminNav: NavItem[] = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { path: "/chat-financeiro", label: "Chat IA", icon: MessageSquare },
-  { path: "/odb", label: "ODB", icon: Sparkles, highlight: true },
+  { path: "/odb", label: "ODB", icon: ODBIcon, highlight: true },
   { path: "/history", label: "Histórico", icon: ClipboardList },
   { path: "/settings", label: "Config", icon: Settings },
 ];
 
 const gerenteNav: NavItem[] = [
   { path: "/dashboard", label: "Resumo", icon: LayoutDashboard },
-  { path: "/odb", label: "ODB", icon: Sparkles, highlight: true },
+  { path: "/odb", label: "ODB", icon: ODBIcon, highlight: true },
   { path: "/history", label: "Serviços", icon: ClipboardList },
   { path: "/settings", label: "Config", icon: Settings },
 ];
 
 const operadorNav: NavItem[] = [
-  { path: "/odb", label: "ODB", icon: Sparkles, highlight: true },
+  { path: "/odb", label: "ODB", icon: ODBIcon, highlight: true },
   { path: "/history", label: "Meus Lanç.", icon: ClipboardList },
   { path: "/perfil", label: "Perfil", icon: User },
 ];
