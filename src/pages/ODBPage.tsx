@@ -74,6 +74,7 @@ const ODBPage = () => {
   const chunksRef = useRef<Blob[]>([]);
   const recognitionRef = useRef<any>(null);
   const [transcript, setTranscript] = useState("");
+  const lastCardRef = useRef<{ card: ODBCard | null; veiculo: any }>(null);
 
   const isGerente = profile?.role === "gerente";
 
