@@ -216,7 +216,7 @@ const ODBPage = () => {
       });
     } else if (["pix", "dinheiro", "debito", "credito", "misto"].includes(button.value)) {
       const metodo = button.label;
-      const resumo = `Salvo! 🎉\n\n💰 Total via ${metodo}\n${!isGerente ? "📊 Margem calculada automaticamente\n⚡ Ganho/hora registrado" : ""}\n\n💪 Bom serviço!`;
+      const resumo = `Salvo! 🎉\n\n💰 Total via ${metodo}\n${!isGerente ? "📊 Margem calculada automaticamente\n⚡ Ganho/hora registrado" : ""}\n\n🧠 Aprendendo com este serviço...\n💪 Bom serviço!`;
       addMessage({
         type: "odb",
         content: resumo,
@@ -225,6 +225,33 @@ const ODBPage = () => {
           { label: "🔄 Novo Lançamento", value: "novo", variant: "primary" },
         ],
       });
+
+      // Trigger learning: save confirmed items to knowledge base
+      if (lastCardRef.current?.card) {
+        const allItems = [
+          ...(lastCardRef.current.card.itens_dianteira || []),
+          ...(lastCardRef.current.card.itens_traseira || []),
+        ].filter(i => i.valor > 0);
+
+        if (allItems.length > 0) {
+          supabase.functions.invoke("odb-processar", {
+            body: {
+              salvar_aprendizado: true,
+              itens_confirmados: allItems.map(i => ({
+                descricao: i.descricao,
+                tipo: i.tipo,
+                valor_cobrado: i.valor,
+                custo: 0, // User didn't specify cost in chat flow
+              })),
+              veiculo_info: lastCardRef.current.veiculo,
+            },
+          }).then(() => {
+            console.log("ODB: Aprendizado salvo com sucesso");
+          }).catch(err => {
+            console.error("ODB learning error:", err);
+          });
+        }
+      }
     } else if (button.value === "novo") {
       setMessages([{
         id: crypto.randomUUID(),
