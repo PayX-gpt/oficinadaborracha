@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, ClipboardList, Settings, Users, User, MessageSquare } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Settings, Users, User, MessageSquare, Package } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth, UserRole } from "@/hooks/useAuth";
 import odbLogo from "@/assets/odb-logo.png";
@@ -18,7 +18,7 @@ const ODBIcon = ({ className }: { className?: string }) => (
 
 const adminNav: NavItem[] = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/chat-financeiro", label: "Chat IA", icon: MessageSquare },
+  { path: "/pecas", label: "Peças", icon: Package },
   { path: "/odb", label: "ODB", icon: ODBIcon, highlight: true },
   { path: "/history", label: "Histórico", icon: ClipboardList },
   { path: "/settings", label: "Config", icon: Settings },

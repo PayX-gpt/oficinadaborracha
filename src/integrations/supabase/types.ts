@@ -563,6 +563,117 @@ export type Database = {
           },
         ]
       }
+      nota_fiscal_items: {
+        Row: {
+          created_at: string
+          descricao: string
+          id: string
+          lancamento_id: string | null
+          nota_fiscal_id: string
+          quantidade: number
+          status: string
+          valor_total: number
+          valor_unitario: number
+          veiculo_desc: string | null
+          veiculo_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          id?: string
+          lancamento_id?: string | null
+          nota_fiscal_id: string
+          quantidade?: number
+          status?: string
+          valor_total?: number
+          valor_unitario?: number
+          veiculo_desc?: string | null
+          veiculo_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          lancamento_id?: string | null
+          nota_fiscal_id?: string
+          quantidade?: number
+          status?: string
+          valor_total?: number
+          valor_unitario?: number
+          veiculo_desc?: string | null
+          veiculo_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nota_fiscal_items_lancamento_id_fkey"
+            columns: ["lancamento_id"]
+            isOneToOne: false
+            referencedRelation: "lancamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nota_fiscal_items_nota_fiscal_id_fkey"
+            columns: ["nota_fiscal_id"]
+            isOneToOne: false
+            referencedRelation: "notas_fiscais_pecas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nota_fiscal_items_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notas_fiscais_pecas: {
+        Row: {
+          created_at: string
+          data_recebimento: string
+          filial_id: string | null
+          fornecedor: string | null
+          id: string
+          numero_nota: string | null
+          observacoes: string | null
+          registrado_por: string | null
+          status: string
+          valor_total: number
+        }
+        Insert: {
+          created_at?: string
+          data_recebimento?: string
+          filial_id?: string | null
+          fornecedor?: string | null
+          id?: string
+          numero_nota?: string | null
+          observacoes?: string | null
+          registrado_por?: string | null
+          status?: string
+          valor_total?: number
+        }
+        Update: {
+          created_at?: string
+          data_recebimento?: string
+          filial_id?: string | null
+          fornecedor?: string | null
+          id?: string
+          numero_nota?: string | null
+          observacoes?: string | null
+          registrado_por?: string | null
+          status?: string
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notas_fiscais_pecas_filial_id_fkey"
+            columns: ["filial_id"]
+            isOneToOne: false
+            referencedRelation: "filiais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notificacoes: {
         Row: {
           created_at: string | null
@@ -950,6 +1061,53 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      solicitacoes_pecas: {
+        Row: {
+          atendida_at: string | null
+          created_at: string
+          id: string
+          itens: Json
+          lancamento_id: string | null
+          observacoes: string | null
+          placa: string | null
+          solicitado_por: string | null
+          status: string
+          veiculo_desc: string | null
+        }
+        Insert: {
+          atendida_at?: string | null
+          created_at?: string
+          id?: string
+          itens?: Json
+          lancamento_id?: string | null
+          observacoes?: string | null
+          placa?: string | null
+          solicitado_por?: string | null
+          status?: string
+          veiculo_desc?: string | null
+        }
+        Update: {
+          atendida_at?: string | null
+          created_at?: string
+          id?: string
+          itens?: Json
+          lancamento_id?: string | null
+          observacoes?: string | null
+          placa?: string | null
+          solicitado_por?: string | null
+          status?: string
+          veiculo_desc?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solicitacoes_pecas_lancamento_id_fkey"
+            columns: ["lancamento_id"]
+            isOneToOne: false
+            referencedRelation: "lancamentos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       taxas_maquina: {
         Row: {
