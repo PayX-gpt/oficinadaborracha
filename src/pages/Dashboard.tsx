@@ -12,6 +12,8 @@ import HourlyPerformance from "@/components/dashboard/HourlyPerformance";
 import ManufacturingAnalysis from "@/components/dashboard/ManufacturingAnalysis";
 import LiveFeed from "@/components/dashboard/LiveFeed";
 import AIInsights from "@/components/dashboard/AIInsights";
+import SmartAlerts from "@/components/dashboard/SmartAlerts";
+import PriceRecommendation from "@/components/dashboard/PriceRecommendation";
 import DetailedTable from "@/components/dashboard/DetailedTable";
 import FechamentoDiario from "@/components/dashboard/FechamentoDiario";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -57,7 +59,9 @@ const Dashboard = () => {
           <HourlyPerformance data={data} />
           <ManufacturingAnalysis data={data} />
           <LiveFeed />
+          <SmartAlerts />
           <AIInsights />
+          <PriceRecommendation />
           <DetailedTable />
         </motion.div>
       </AnimatePresence>
