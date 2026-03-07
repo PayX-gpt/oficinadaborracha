@@ -45,16 +45,18 @@ interface ODBCard {
 }
 
 const despesaCategorias = [
-  { icon: "🔧", label: "Peças/Fornecedor" },
-  { icon: "🧱", label: "Matéria-Prima" },
-  { icon: "🏠", label: "Aluguel" },
-  { icon: "⚡", label: "Energia/Água" },
-  { icon: "👷", label: "Salário" },
-  { icon: "🍽️", label: "Alimentação" },
-  { icon: "🔨", label: "Ferramentas" },
-  { icon: "🏛️", label: "Imposto/Contador" },
-  { icon: "💰", label: "Aporte Sócio" },
-  { icon: "📦", label: "Outros" },
+  // Custos diretos (peças/serviço)
+  { icon: "🔧", label: "Peças/Fornecedor", group: "direto" },
+  { icon: "🧱", label: "Matéria-Prima", group: "direto" },
+  { icon: "🔨", label: "Ferramentas", group: "direto" },
+  // Custos operacionais (fixos/administrativos)
+  { icon: "🏠", label: "Aluguel", group: "operacional" },
+  { icon: "⚡", label: "Energia/Água", group: "operacional" },
+  { icon: "👷", label: "Salário", group: "operacional" },
+  { icon: "🍽️", label: "Alimentação", group: "operacional" },
+  { icon: "🏛️", label: "Imposto/Contador", group: "operacional" },
+  { icon: "💰", label: "Aporte Sócio", group: "operacional" },
+  { icon: "📦", label: "Outros", group: "operacional" },
 ];
 
 const ODBPage = () => {

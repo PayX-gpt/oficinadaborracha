@@ -13,9 +13,8 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 
 const categories = [
-  "Peças Compradas", "Matéria-Prima (Borracha)", "Aluguel", "Energia", "Água", "Internet",
-  "Salário Funcionário", "Alimentação/Almoço", "Ferramentas", "Manutenção", "Imposto",
-  "Aporte de Sócio", "Marketing", "Outros",
+  { group: "Custos Diretos", items: ["Peças Compradas", "Matéria-Prima (Borracha)", "Ferramentas"] },
+  { group: "Custos Operacionais", items: ["Aluguel", "Energia", "Água", "Internet", "Salário Funcionário", "Alimentação/Almoço", "Manutenção", "Imposto", "Marketing", "Aporte de Sócio", "Outros"] },
 ];
 
 const paymentMethods = ["PIX", "Dinheiro", "Débito", "Crédito", "Transferência"];
