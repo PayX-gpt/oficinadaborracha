@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, ClipboardList, Settings, Sparkles, Users, User } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Settings, Sparkles, Users, User, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth, UserRole } from "@/hooks/useAuth";
 
@@ -12,7 +12,7 @@ interface NavItem {
 
 const adminNav: NavItem[] = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/equipe", label: "Equipe", icon: Users },
+  { path: "/chat-financeiro", label: "Chat IA", icon: MessageSquare },
   { path: "/odb", label: "ODB", icon: Sparkles, highlight: true },
   { path: "/history", label: "Histórico", icon: ClipboardList },
   { path: "/settings", label: "Config", icon: Settings },
