@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, Upload, Tag, DollarSign, User, CreditCard, StickyNote, Save } from "lucide-react";
+import { ChevronLeft, Upload, Tag, DollarSign, User, CreditCard, StickyNote, Save, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
@@ -36,17 +38,38 @@ const SectionCard = ({ icon: Icon, title, children }: { icon: any; title: string
 
 const LaunchExpense = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [categoria, setCategoria] = useState("");
   const [subcategoria, setSubcategoria] = useState("");
   const [valor, setValor] = useState("");
   const [pagoPor, setPagoPor] = useState("");
   const [metodo, setMetodo] = useState("");
   const [observacoes, setObservacoes] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (!user) { toast.error("Faça login."); return; }
     if (!categoria || !valor) { toast.error("Preencha categoria e valor."); return; }
-    toast.success("Despesa registrada com sucesso!");
-    navigate("/dashboard");
+
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("despesas").insert({
+        user_id: user.id,
+        categoria,
+        subcategoria: subcategoria || null,
+        valor: parseFloat(valor),
+        pago_por: pagoPor || null,
+        metodo_pagamento: metodo || null,
+        observacoes: observacoes || null,
+      });
+      if (error) throw error;
+      toast.success("Despesa registrada com sucesso!");
+      navigate("/dashboard");
+    } catch (err: any) {
+      toast.error("Erro ao salvar: " + err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -114,10 +137,12 @@ const LaunchExpense = () => {
 
         <Button
           onClick={handleSave}
+          disabled={saving}
           className="w-full h-11 bg-red-500 text-white hover:bg-red-600 font-semibold text-sm gap-2"
           style={{ boxShadow: "0 0 16px rgba(239,68,68,0.2)" }}
         >
-          <Save className="h-4 w-4" /> Registrar Despesa
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          {saving ? "Salvando..." : "Registrar Despesa"}
         </Button>
       </motion.div>
     </div>

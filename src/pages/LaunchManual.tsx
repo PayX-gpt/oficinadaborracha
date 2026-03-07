@@ -1,11 +1,13 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, ChevronLeft, Car, User, Wrench, CreditCard, StickyNote, Save } from "lucide-react";
+import { Plus, Trash2, ChevronLeft, Car, User, Wrench, CreditCard, StickyNote, Save, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
@@ -46,6 +48,7 @@ const SectionCard = ({ icon: Icon, title, children }: { icon: any; title: string
 
 const LaunchManual = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [cliente, setCliente] = useState("");
   const [marca, setMarca] = useState("");
   const [modelo, setModelo] = useState("");
@@ -58,6 +61,7 @@ const LaunchManual = () => {
   const [metodo, setMetodo] = useState("");
   const [taxa, setTaxa] = useState("");
   const [observacoes, setObservacoes] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const addItem = () =>
     setItems([...items, { id: crypto.randomUUID(), descricao: "", tipo: "mao_de_obra", valor_cobrado: "", custo: "" }]);
@@ -68,19 +72,71 @@ const LaunchManual = () => {
 
   const summary = useMemo(() => {
     const valorBruto = items.reduce((sum, i) => sum + (parseFloat(i.valor_cobrado) || 0), 0);
-    const custoPecas = items.reduce((sum, i) => (i.tipo === "peca_comprada" ? sum + (parseFloat(i.custo) || 0) : sum), 0);
+    const custoPecas = items.reduce((sum, i) => {
+      if (i.tipo === "peca_comprada" || i.tipo === "peca_fabricada") return sum + (parseFloat(i.custo) || 0);
+      return sum;
+    }, 0);
     const descontoVal = parseFloat(desconto) || 0;
     const taxaPerc = parseFloat(taxa) || 0;
     const taxaVal = ((valorBruto - descontoVal) * taxaPerc) / 100;
     const lucroBruto = valorBruto - descontoVal - taxaVal - custoPecas;
-    return { valorBruto, custoPecas, taxaVal, lucroBruto, descontoVal };
+    return { valorBruto, custoPecas, taxaVal, lucroBruto, descontoVal, taxaPerc };
   }, [items, desconto, taxa]);
 
-  const handleSave = () => { toast.success("Lançamento salvo com sucesso!"); navigate("/dashboard"); };
+  const handleSave = async () => {
+    if (!user) { toast.error("Faça login para salvar."); return; }
+    if (items.every((i) => !i.descricao.trim())) { toast.error("Adicione pelo menos um item."); return; }
+
+    setSaving(true);
+    try {
+      const { data: lancamento, error: lancErr } = await supabase
+        .from("lancamentos")
+        .insert({
+          user_id: user.id,
+          cliente_nome: cliente || null,
+          veiculo_desc: [marca, modelo, ano].filter(Boolean).join(" ") || null,
+          placa: placa || null,
+          fonte: "manual",
+          metodo_pagamento: metodo || null,
+          valor_bruto: summary.valorBruto,
+          custo_total: summary.custoPecas,
+          desconto: summary.descontoVal,
+          taxa_percentual: summary.taxaPerc,
+          taxa_valor: summary.taxaVal,
+          valor_liquido: summary.valorBruto - summary.descontoVal - summary.taxaVal,
+          lucro: summary.lucroBruto,
+          observacoes: observacoes || null,
+        })
+        .select("id")
+        .single();
+
+      if (lancErr) throw lancErr;
+
+      const validItems = items.filter((i) => i.descricao.trim());
+      if (validItems.length > 0) {
+        const { error: itemsErr } = await supabase.from("lancamento_items").insert(
+          validItems.map((i) => ({
+            lancamento_id: lancamento.id,
+            descricao: i.descricao,
+            tipo: i.tipo,
+            valor_cobrado: parseFloat(i.valor_cobrado) || 0,
+            custo: parseFloat(i.custo) || 0,
+          }))
+        );
+        if (itemsErr) throw itemsErr;
+      }
+
+      toast.success("Lançamento salvo com sucesso!");
+      navigate("/dashboard");
+    } catch (err: any) {
+      toast.error("Erro ao salvar: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-4 pb-44">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <button onClick={() => navigate("/launch")} className="flex items-center justify-center h-8 w-8 rounded-lg bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors">
           <ChevronLeft className="h-4 w-4" />
@@ -91,12 +147,10 @@ const LaunchManual = () => {
         </div>
       </div>
 
-      {/* Cliente */}
       <SectionCard icon={User} title="Cliente">
         <Input placeholder="Nome do cliente" value={cliente} onChange={(e) => setCliente(e.target.value)} className="bg-background/30 border-border/50 h-9 text-sm" />
       </SectionCard>
 
-      {/* Veículo */}
       <SectionCard icon={Car} title="Veículo">
         <div className="grid grid-cols-2 gap-2">
           <Input placeholder="Marca" value={marca} onChange={(e) => setMarca(e.target.value)} className="bg-background/30 border-border/50 h-9 text-sm" />
@@ -106,7 +160,6 @@ const LaunchManual = () => {
         </div>
       </SectionCard>
 
-      {/* Itens */}
       <SectionCard icon={Wrench} title="Itens do Serviço">
         <AnimatePresence>
           {items.map((item, idx) => (
@@ -139,7 +192,7 @@ const LaunchManual = () => {
                   <Label className="text-[10px] text-muted-foreground">Valor (R$)</Label>
                   <Input type="number" placeholder="0,00" value={item.valor_cobrado} onChange={(e) => updateItem(item.id, "valor_cobrado", e.target.value)} className="bg-background/20 border-border/40 h-8 text-xs" />
                 </div>
-                {item.tipo === "peca_comprada" && (
+                {(item.tipo === "peca_comprada" || item.tipo === "peca_fabricada") && (
                   <div>
                     <Label className="text-[10px] text-muted-foreground">Custo (R$)</Label>
                     <Input type="number" placeholder="0,00" value={item.custo} onChange={(e) => updateItem(item.id, "custo", e.target.value)} className="bg-background/20 border-border/40 h-8 text-xs" />
@@ -154,7 +207,6 @@ const LaunchManual = () => {
         </button>
       </SectionCard>
 
-      {/* Pagamento */}
       <SectionCard icon={CreditCard} title="Pagamento">
         <div className="space-y-3">
           <div>
@@ -188,12 +240,10 @@ const LaunchManual = () => {
         </div>
       </SectionCard>
 
-      {/* Observações */}
       <SectionCard icon={StickyNote} title="Observações">
         <Textarea placeholder="Notas adicionais..." value={observacoes} onChange={(e) => setObservacoes(e.target.value)} className="bg-background/30 border-border/50 min-h-[60px] text-sm resize-none" />
       </SectionCard>
 
-      {/* Summary Footer */}
       <div className="fixed bottom-16 md:bottom-0 left-0 right-0 z-40 md:left-64">
         <div className="mx-auto max-w-4xl px-3 pb-2 md:pb-4">
           <motion.div
@@ -226,8 +276,9 @@ const LaunchManual = () => {
                 </p>
               </div>
             </div>
-            <Button onClick={handleSave} className="w-full h-10 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-sm gap-2" style={{ boxShadow: "0 0 20px rgba(245,158,11,0.25)" }}>
-              <Save className="h-4 w-4" /> Salvar Lançamento
+            <Button onClick={handleSave} disabled={saving} className="w-full h-10 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-sm gap-2" style={{ boxShadow: "0 0 20px rgba(245,158,11,0.25)" }}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              {saving ? "Salvando..." : "Salvar Lançamento"}
             </Button>
           </motion.div>
         </div>
