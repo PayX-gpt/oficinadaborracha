@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { Camera, Mic, Pencil, Receipt, ArrowRight, Sparkles } from "lucide-react";
+import { Camera, Mic, Pencil, Receipt, ArrowRight } from "lucide-react";
+import odbLogo from "@/assets/odb-logo.png";
 import { motion } from "framer-motion";
 
 const options = [
