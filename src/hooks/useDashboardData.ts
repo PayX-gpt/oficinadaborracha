@@ -196,8 +196,8 @@ export function useDashboardData(period: string, branch: string = "all") {
         const litems = itemsByLanc.get(l.id) || [];
         litems.forEach((it) => {
           const val = Number(it.valor_cobrado);
-          if (it.tipo === "fabricada") cur.fabricadas += val;
-          else if (it.tipo === "comprada") cur.compradas += val;
+          if (it.tipo === "fabricada" || it.tipo === "peca_fabricada") cur.fabricadas += val;
+          else if (it.tipo === "comprada" || it.tipo === "peca_comprada") cur.compradas += val;
           else cur.maoDeObra += val;
         });
         // If no items, attribute to mao_de_obra
@@ -224,7 +224,7 @@ export function useDashboardData(period: string, branch: string = "all") {
       });
 
       // Manufacturing (items with tipo='fabricada')
-      const fabItems = items.filter((it) => it.tipo === "fabricada");
+      const fabItems = items.filter((it) => it.tipo === "fabricada" || it.tipo === "peca_fabricada");
       const mfgReceita = fabItems.reduce((s, it) => s + Number(it.valor_cobrado), 0);
       const mfgCusto = fabItems.reduce((s, it) => s + Number(it.custo), 0);
       const mfgPecas = fabItems.length;
@@ -256,7 +256,7 @@ export function useDashboardData(period: string, branch: string = "all") {
       };
 
       // Operational metrics
-      const compItems = items.filter((it) => it.tipo === "comprada");
+      const compItems = items.filter((it) => it.tipo === "comprada" || it.tipo === "peca_comprada");
       const compReceita = compItems.reduce((s, it) => s + Number(it.valor_cobrado), 0);
       const compCusto = compItems.reduce((s, it) => s + Number(it.custo), 0);
 

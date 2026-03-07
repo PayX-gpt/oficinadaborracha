@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Building2, Users, Percent, LogOut, Loader2, Plus, Trash2, Save, Edit2 } from "lucide-react";
+import { Building2, Users, Percent, LogOut, Loader2, Plus, Trash2, Save } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 const SectionCard = ({ icon: Icon, title, children, defaultOpen = false }: { icon: any; title: string; children: React.ReactNode; defaultOpen?: boolean }) => {
@@ -43,6 +42,13 @@ const SettingsPage = () => {
     queryFn: async () => { const { data } = await supabase.from("socios").select("*").order("nome"); return data || []; },
   });
 
+  const { data: taxas = [], refetch: refetchTaxas } = useQuery({
+    queryKey: ["taxas-maquina-settings"],
+    queryFn: async () => { const { data } = await supabase.from("taxas_maquina").select("*").order("metodo"); return data || []; },
+  });
+
+  const [editingTaxas, setEditingTaxas] = useState<Record<string, string>>({});
+
   const addFilial = useMutation({
     mutationFn: async () => {
       if (!newFilial.trim()) return;
@@ -54,10 +60,7 @@ const SettingsPage = () => {
   });
 
   const deleteFilial = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("filiais").delete().eq("id", id);
-      if (error) throw error;
-    },
+    mutationFn: async (id: string) => { const { error } = await supabase.from("filiais").delete().eq("id", id); if (error) throw error; },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["filiais"] }); toast.success("Filial removida!"); },
     onError: (e: any) => toast.error(e.message),
   });
@@ -73,16 +76,27 @@ const SettingsPage = () => {
   });
 
   const deleteSocio = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("socios").delete().eq("id", id);
-      if (error) throw error;
-    },
+    mutationFn: async (id: string) => { const { error } = await supabase.from("socios").delete().eq("id", id); if (error) throw error; },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["socios"] }); toast.success("Sócio removido!"); },
     onError: (e: any) => toast.error(e.message),
   });
 
-  const handleLogout = async () => { setLoggingOut(true); await signOut(); navigate("/login"); };
+  const saveTaxas = async () => {
+    try {
+      for (const [id, val] of Object.entries(editingTaxas)) {
+        const { error } = await supabase.from("taxas_maquina").update({ taxa_percentual: parseFloat(val) }).eq("id", id);
+        if (error) throw error;
+      }
+      setEditingTaxas({});
+      queryClient.invalidateQueries({ queryKey: ["taxas-maquina"] });
+      queryClient.invalidateQueries({ queryKey: ["taxas-maquina-settings"] });
+      toast.success("Taxas atualizadas!");
+    } catch (err: any) {
+      toast.error("Erro: " + err.message);
+    }
+  };
 
+  const handleLogout = async () => { setLoggingOut(true); await signOut(); navigate("/login"); };
   const totalPercent = socios.reduce((s, so) => s + Number(so.percentual_lucro), 0);
 
   return (
@@ -132,21 +146,27 @@ const SettingsPage = () => {
       </SectionCard>
 
       <SectionCard icon={Percent} title="Taxas de Máquina">
-        <div className="space-y-2 text-xs">
-          {[
-            { label: "PIX", taxa: "0%" },
-            { label: "Dinheiro", taxa: "0%" },
-            { label: "Débito", taxa: "1.5%" },
-            { label: "Crédito 1x", taxa: "2.5%" },
-            { label: "Crédito 2x", taxa: "3.5%" },
-            { label: "Crédito 3x", taxa: "4.5%" },
-          ].map((t) => (
-            <div key={t.label} className="flex items-center justify-between py-2 px-3 rounded-lg bg-secondary/20">
-              <span className="text-foreground">{t.label}</span>
-              <span className="text-muted-foreground">{t.taxa}</span>
+        <div className="space-y-2">
+          {taxas.map((t: any) => (
+            <div key={t.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-secondary/20 gap-3">
+              <span className="text-sm text-foreground flex-1">{t.metodo}</span>
+              <div className="flex items-center gap-1">
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={editingTaxas[t.id] ?? String(Number(t.taxa_percentual))}
+                  onChange={(e) => setEditingTaxas({ ...editingTaxas, [t.id]: e.target.value })}
+                  className="bg-background/20 border-border/40 h-7 text-xs w-20 text-right"
+                />
+                <span className="text-xs text-muted-foreground">%</span>
+              </div>
             </div>
           ))}
-          <p className="text-[11px] text-muted-foreground">Taxas configuráveis em versão futura</p>
+          {Object.keys(editingTaxas).length > 0 && (
+            <Button onClick={saveTaxas} size="sm" className="w-full h-8 bg-primary text-primary-foreground gap-1 text-xs">
+              <Save className="h-3 w-3" /> Salvar Taxas
+            </Button>
+          )}
         </div>
       </SectionCard>
 

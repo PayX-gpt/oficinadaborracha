@@ -2,12 +2,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useFiliais } from "@/hooks/useFiliais";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, Upload, Tag, DollarSign, User, CreditCard, StickyNote, Save, Loader2 } from "lucide-react";
+import { ChevronLeft, Upload, Tag, DollarSign, User, CreditCard, StickyNote, Save, Loader2, Building2, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
@@ -22,11 +23,7 @@ const paymentMethods = ["PIX", "Dinheiro", "Débito", "Crédito", "Transferênci
 const SectionCard = ({ icon: Icon, title, children }: { icon: any; title: string; children: React.ReactNode }) => (
   <div
     className="rounded-xl p-4 space-y-3 border transition-all duration-200"
-    style={{
-      background: "rgba(14,20,35,0.7)",
-      backdropFilter: "blur(12px)",
-      borderColor: "rgba(245,158,11,0.08)",
-    }}
+    style={{ background: "rgba(14,20,35,0.7)", backdropFilter: "blur(12px)", borderColor: "rgba(245,158,11,0.08)" }}
   >
     <div className="flex items-center gap-2">
       <Icon className="h-3.5 w-3.5 text-red-400" />
@@ -39,6 +36,8 @@ const SectionCard = ({ icon: Icon, title, children }: { icon: any; title: string
 const LaunchExpense = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { data: filiais = [] } = useFiliais();
+  const [filialId, setFilialId] = useState("");
   const [categoria, setCategoria] = useState("");
   const [subcategoria, setSubcategoria] = useState("");
   const [valor, setValor] = useState("");
@@ -46,6 +45,27 @@ const LaunchExpense = () => {
   const [metodo, setMetodo] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [comprovanteUrl, setComprovanteUrl] = useState<string | null>(null);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `comprovantes/${user.id}/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("uploads").upload(path, file);
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from("uploads").getPublicUrl(path);
+      setComprovanteUrl(urlData.publicUrl);
+      toast.success("Comprovante anexado!");
+    } catch (err: any) {
+      toast.error("Erro no upload: " + err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!user) { toast.error("Faça login."); return; }
@@ -55,12 +75,14 @@ const LaunchExpense = () => {
     try {
       const { error } = await supabase.from("despesas").insert({
         user_id: user.id,
+        filial_id: filialId || null,
         categoria,
         subcategoria: subcategoria || null,
         valor: parseFloat(valor),
         pago_por: pagoPor || null,
         metodo_pagamento: metodo || null,
         observacoes: observacoes || null,
+        comprovante_url: comprovanteUrl,
       });
       if (error) throw error;
       toast.success("Despesa registrada com sucesso!");
@@ -85,6 +107,17 @@ const LaunchExpense = () => {
       </div>
 
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+        {filiais.length > 0 && (
+          <SectionCard icon={Building2} title="Filial">
+            <Select value={filialId} onValueChange={setFilialId}>
+              <SelectTrigger className="bg-background/30 border-border/50 h-9 text-sm"><SelectValue placeholder="Selecione a filial" /></SelectTrigger>
+              <SelectContent>
+                {filiais.map((f) => (<SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>))}
+              </SelectContent>
+            </Select>
+          </SectionCard>
+        )}
+
         <SectionCard icon={Tag} title="Categoria">
           <Select value={categoria} onValueChange={setCategoria}>
             <SelectTrigger className="bg-background/30 border-border/50 h-9 text-sm">
@@ -108,15 +141,7 @@ const LaunchExpense = () => {
         <SectionCard icon={CreditCard} title="Pagamento">
           <div className="grid grid-cols-3 gap-1.5">
             {paymentMethods.map((m) => (
-              <button
-                key={m}
-                onClick={() => setMetodo(m)}
-                className={`rounded-lg px-2 py-2 text-[11px] font-medium transition-all border ${
-                  metodo === m
-                    ? "bg-primary/20 border-primary/40 text-primary"
-                    : "bg-secondary/30 border-border/30 text-muted-foreground hover:border-primary/20"
-                }`}
-              >
+              <button key={m} onClick={() => setMetodo(m)} className={`rounded-lg px-2 py-2 text-[11px] font-medium transition-all border ${metodo === m ? "bg-primary/20 border-primary/40 text-primary" : "bg-secondary/30 border-border/30 text-muted-foreground hover:border-primary/20"}`}>
                 {m}
               </button>
             ))}
@@ -124,23 +149,26 @@ const LaunchExpense = () => {
         </SectionCard>
 
         <SectionCard icon={Upload} title="Comprovante">
-          <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border/40 bg-secondary/20 p-3 text-xs text-muted-foreground hover:border-primary/30 transition-colors">
-            <Upload className="h-4 w-4" />
-            <span>Toque para anexar foto</span>
-            <input type="file" accept="image/*" className="hidden" />
-          </label>
+          {comprovanteUrl ? (
+            <div className="flex items-center gap-2 text-emerald-500 text-xs">
+              <CheckCircle className="h-4 w-4" />
+              <span>Comprovante anexado</span>
+              <button onClick={() => setComprovanteUrl(null)} className="text-muted-foreground hover:text-red-400 ml-auto text-[10px]">Remover</button>
+            </div>
+          ) : (
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border/40 bg-secondary/20 p-3 text-xs text-muted-foreground hover:border-primary/30 transition-colors">
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              <span>{uploading ? "Enviando..." : "Toque para anexar foto"}</span>
+              <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} disabled={uploading} />
+            </label>
+          )}
         </SectionCard>
 
         <SectionCard icon={StickyNote} title="Observações">
           <Textarea placeholder="Notas adicionais..." value={observacoes} onChange={(e) => setObservacoes(e.target.value)} className="bg-background/30 border-border/50 min-h-[60px] text-sm resize-none" />
         </SectionCard>
 
-        <Button
-          onClick={handleSave}
-          disabled={saving}
-          className="w-full h-11 bg-red-500 text-white hover:bg-red-600 font-semibold text-sm gap-2"
-          style={{ boxShadow: "0 0 16px rgba(239,68,68,0.2)" }}
-        >
+        <Button onClick={handleSave} disabled={saving} className="w-full h-11 bg-red-500 text-white hover:bg-red-600 font-semibold text-sm gap-2" style={{ boxShadow: "0 0 16px rgba(239,68,68,0.2)" }}>
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           {saving ? "Salvando..." : "Registrar Despesa"}
         </Button>
