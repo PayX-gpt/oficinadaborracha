@@ -16,6 +16,7 @@ function getNavItems(role: UserRole): NavItem[] {
       return [
         { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
         { path: "/chat-financeiro", label: "Chat IA", icon: MessageSquare },
+        { path: "/clientes", label: "Clientes", icon: UserCircle },
         { path: "/equipe", label: "Equipe", icon: Users },
         { path: "/odb", label: "Agente ODB", icon: Sparkles },
         { path: "/history", label: "Histórico", icon: ClipboardList },
