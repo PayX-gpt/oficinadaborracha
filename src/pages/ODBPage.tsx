@@ -412,6 +412,64 @@ const ODBPage = () => {
         return;
       }
 
+      // ── INCOMPLETO — precisa de mais informações ──
+      if (result.tipo_documento === "incompleto") {
+        let msg = result.pergunta || "Não consegui entender completamente. Pode fornecer mais detalhes?";
+        if (result.transcricao) msg = `"${result.transcricao}"\n\n${msg}`;
+        if (result.categoria_provavel && result.categoria_provavel !== "desconhecido") {
+          msg = `Parece ser um registro de **${result.categoria_provavel === "orcamento" ? "orçamento" : result.categoria_provavel === "despesa" ? "despesa" : "nota de peças"}**, mas preciso de mais informações.\n\n${msg}`;
+        }
+        addMessage({ type: "odb", content: msg });
+        inputRef.current?.focus();
+        setIsProcessing(false);
+        return;
+      }
+
+      // ── DESPESA DETECTION ──
+      if (result.tipo_documento === "despesa") {
+        const despesa: DespesaCard = {
+          categoria: result.categoria || "Outros",
+          descricao: result.descricao || "",
+          valor: result.valor || null,
+          metodo_pagamento: result.metodo_pagamento,
+          pago_por: result.pago_por,
+          observacoes: result.observacoes,
+        };
+
+        if (result.campos_faltando?.length > 0 && result.campos_faltando.includes("valor")) {
+          addMessage({
+            type: "odb",
+            content: `Identifiquei uma **despesa** de **${despesa.categoria}**${despesa.descricao ? `: ${despesa.descricao}` : ""}.\n\nQual o valor?`,
+            isDespesa: true,
+            despesaData: despesa,
+          });
+          inputRef.current?.focus();
+          setIsProcessing(false);
+          return;
+        }
+
+        let resumo = `Identifiquei uma **despesa**. Confira o resumo:\n\n`;
+        resumo += `**Categoria:** ${despesa.categoria}\n`;
+        if (despesa.descricao) resumo += `**Descrição:** ${despesa.descricao}\n`;
+        if (despesa.valor) resumo += `**Valor:** R$ ${despesa.valor.toFixed(2)}\n`;
+        if (despesa.metodo_pagamento) resumo += `**Pagamento:** ${despesa.metodo_pagamento}\n`;
+        if (despesa.observacoes) resumo += `**Obs:** ${despesa.observacoes}\n`;
+        if (result.transcricao) resumo = `"${result.transcricao}"\n\n${resumo}`;
+
+        addMessage({
+          type: "odb",
+          content: resumo,
+          isDespesa: true,
+          despesaData: despesa,
+          buttons: [
+            { label: "Confirmar despesa", value: "confirmar_despesa", variant: "success" },
+            { label: "Corrigir", value: "corrigir_resumo", variant: "warning" },
+          ],
+        });
+        setIsProcessing(false);
+        return;
+      }
+
       // ── NOTA DE PEÇAS DETECTION ──
       if (result.tipo_documento === "nota_pecas") {
         const notaData: NotaPecasCard = {
