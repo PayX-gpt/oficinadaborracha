@@ -123,7 +123,12 @@ const LaunchExpense = () => {
               <SelectValue placeholder="Selecione a categoria" />
             </SelectTrigger>
             <SelectContent>
-              {categories.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
+              {categories.map((group) => (
+                <div key={group.group}>
+                  <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{group.group}</div>
+                  {group.items.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
+                </div>
+              ))}
             </SelectContent>
           </Select>
           <Input placeholder="Subcategoria (ex: Borracha Natural 5kg)" value={subcategoria} onChange={(e) => setSubcategoria(e.target.value)} className="bg-background/30 border-border/50 h-9 text-sm" />
