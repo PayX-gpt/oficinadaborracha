@@ -19,7 +19,7 @@ const Dashboard = () => {
   const [selectedPeriod, setSelectedPeriod] = useState("Hoje");
 
   return (
-    <div className="space-y-4 pb-24" style={{ background: "#070B14", minHeight: "100vh", margin: "-1.5rem", padding: "1.5rem" }}>
+    <div className="space-y-4 pb-24">
       <AnimatePresence mode="wait">
         <motion.div key={`${selectedBranch}-${selectedPeriod}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="space-y-4">
           <DashboardHeader
