@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, ClipboardList, Settings, Sparkles, Users, User, LogOut, MessageSquare } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Settings, Sparkles, Users, User, LogOut, MessageSquare, UserCircle } from "lucide-react";
 import { useAuth, UserRole } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ function getNavItems(role: UserRole): NavItem[] {
       return [
         { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
         { path: "/chat-financeiro", label: "Chat IA", icon: MessageSquare },
+        { path: "/clientes", label: "Clientes", icon: UserCircle },
         { path: "/equipe", label: "Equipe", icon: Users },
         { path: "/odb", label: "Agente ODB", icon: Sparkles },
         { path: "/history", label: "Histórico", icon: ClipboardList },
