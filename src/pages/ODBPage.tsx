@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
+import { useQuery } from "@tanstack/react-query";
 
 type MessageType = "user" | "odb" | "system";
 
@@ -82,6 +83,12 @@ const despesaCategorias = [
 
 const ODBPage = () => {
   const { profile } = useAuth();
+  const { data: filiais = [] } = useQuery({
+    queryKey: ["filiais-odb"],
+    queryFn: async () => { const { data } = await supabase.from("filiais").select("id, nome").eq("ativa", true); return data || []; },
+    staleTime: 60000,
+  });
+  const filialNome = filiais.find(f => f.id === profile?.filial_id)?.nome || null;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [textInput, setTextInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -110,7 +117,7 @@ const ODBPage = () => {
         {
           id: "welcome",
           type: "odb",
-          content: `Olá${profile?.nome ? `, ${profile.nome}` : ""}! Sou o Agente ODB — seu assistente inteligente.\n\nComo posso ajudar?`,
+          content: `Olá${profile?.nome ? `, ${profile.nome}` : ""}! Sou o Agente ODB — seu assistente inteligente.${filialNome ? `\n\nFilial: **${filialNome}**` : ""}\n\nComo posso ajudar?`,
           timestamp: new Date(),
           buttons: [
             { label: "Enviar foto", value: "action_foto", icon: "camera", variant: "primary" },
@@ -404,7 +411,7 @@ const ODBPage = () => {
   const processWithODB = async (fonte: string, content: string, imageBase64?: string, mimeType?: string) => {
     setIsProcessing(true);
     try {
-      const body: any = { tipo: fonte };
+      const body: any = { tipo: fonte, filial_id: profile?.filial_id || null, filial_nome: filialNome || null };
       if (fonte === "foto" && imageBase64) {
         body.imageBase64 = imageBase64;
         body.mimeType = mimeType || "image/jpeg";
