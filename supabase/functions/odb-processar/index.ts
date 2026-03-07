@@ -155,12 +155,12 @@ ${veiculos.map(v => `${v.marca} ${v.modelo} ${v.ano || ""} ${v.placa || ""}`).jo
     } else if (tipo === "audio" && conteudo) {
       messages.push({
         role: "user",
-        content: `Transcrição do operador (pode ter erros, abreviações, gírias): "${conteudo}"\n\nExtraia os dados estruturados. Inclua o campo "transcricao" com a versão corrigida do texto. Retorne JSON.`,
+        content: `Transcrição do operador (pode ter erros, abreviações, gírias): "${conteudo}"\n\nClassifique se é um ORÇAMENTO de cliente, uma DESPESA da oficina ou PEÇAS COMPRADAS de fornecedor. Se não conseguir classificar ou faltar informação essencial, peça mais detalhes. Extraia os dados estruturados conforme o formato apropriado. Inclua o campo "transcricao" com a versão corrigida do texto. Retorne JSON.`,
       });
     } else if (tipo === "texto" && conteudo) {
       messages.push({
         role: "user",
-        content: `Texto do operador (pode ter erros, abreviações, gírias): "${conteudo}"\n\nExtraia os dados estruturados. Retorne JSON.`,
+        content: `Texto do operador (pode ter erros, abreviações, gírias): "${conteudo}"\n\nClassifique se é um ORÇAMENTO de cliente, uma DESPESA da oficina ou PEÇAS COMPRADAS de fornecedor. Se não conseguir classificar ou faltar informação essencial, peça mais detalhes. Extraia os dados estruturados conforme o formato apropriado. Retorne JSON.`,
       });
     } else {
       return new Response(JSON.stringify({ error: "Tipo ou conteúdo inválido" }), {
