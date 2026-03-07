@@ -90,7 +90,7 @@ const Launch = () => {
                   <span className="text-sm font-semibold text-foreground">{opt.label}</span>
                   {opt.tag && (
                     <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-primary/15 text-primary uppercase tracking-wider">
-                      <Sparkles className="h-2.5 w-2.5" />
+                      <img src={odbLogo} alt="IA" className="h-3 w-3 object-contain" />
                       {opt.tag}
                     </span>
                   )}
