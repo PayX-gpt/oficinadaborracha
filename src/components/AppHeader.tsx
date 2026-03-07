@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Bell, X, Check, AlertTriangle, TrendingUp, Info, CheckCircle } from "lucide-react";
+import odbLogo from "@/assets/odb-logo.png";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,8 +56,8 @@ const AppHeader = () => {
       }}
     >
       <div className="flex items-center gap-2.5">
-        <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center" style={{ boxShadow: "0 0 12px rgba(245,158,11,0.2)" }}>
-          <span className="text-[11px] font-extrabold text-primary-foreground">OB</span>
+        <div className="h-7 w-7 rounded-lg overflow-hidden flex items-center justify-center" style={{ boxShadow: "0 0 12px rgba(245,158,11,0.2)" }}>
+          <img src={odbLogo} alt="ODB" className="h-7 w-7 object-contain" />
         </div>
         <span className="text-sm font-semibold text-foreground hidden sm:block">Oficina da Borracha</span>
       </div>
