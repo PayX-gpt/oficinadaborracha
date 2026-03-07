@@ -380,6 +380,27 @@ export type Database = {
         }
         Relationships: []
       }
+      taxas_maquina: {
+        Row: {
+          created_at: string
+          id: string
+          metodo: string
+          taxa_percentual: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metodo: string
+          taxa_percentual?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metodo?: string
+          taxa_percentual?: number
+        }
+        Relationships: []
+      }
       veiculos: {
         Row: {
           ano: string | null
