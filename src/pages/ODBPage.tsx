@@ -597,6 +597,7 @@ const ODBPage = () => {
       action_foto: Camera, action_audio: Mic, action_nota: FileText, action_despesa: Receipt,
       process_image_now: ArrowRight, add_observation: Edit,
       confirmar_resumo: Check, corrigir_resumo: Edit, confirmar_nota: Check, corrigir_veiculo: Car,
+      confirmar_despesa: Check,
       entrada: Clock, pagamento: CreditCard,
       pix: Zap, dinheiro: Banknote, debito: CreditCard, credito: CreditCard, misto: Layers,
       novo: RotateCcw, historico: History, valor_despesa: DollarSign,
