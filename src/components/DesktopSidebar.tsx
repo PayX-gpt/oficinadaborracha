@@ -11,6 +11,10 @@ interface NavItem {
   icon: any;
 }
 
+const ODBIcon = ({ className }: { className?: string }) => (
+  <img src={odbLogo} alt="ODB" className={className} style={{ objectFit: "contain" }} />
+);
+
 function getNavItems(role: UserRole): NavItem[] {
   switch (role) {
     case "admin":
@@ -19,20 +23,20 @@ function getNavItems(role: UserRole): NavItem[] {
         { path: "/chat-financeiro", label: "Chat IA", icon: MessageSquare },
         { path: "/clientes", label: "Clientes", icon: UserCircle },
         { path: "/equipe", label: "Equipe", icon: Users },
-        { path: "/odb", label: "Agente ODB", icon: Sparkles },
+        { path: "/odb", label: "Agente ODB", icon: ODBIcon },
         { path: "/history", label: "Histórico", icon: ClipboardList },
         { path: "/settings", label: "Configurações", icon: Settings },
       ];
     case "gerente":
       return [
         { path: "/dashboard", label: "Resumo", icon: LayoutDashboard },
-        { path: "/odb", label: "Agente ODB", icon: Sparkles },
+        { path: "/odb", label: "Agente ODB", icon: ODBIcon },
         { path: "/history", label: "Serviços", icon: ClipboardList },
         { path: "/settings", label: "Config", icon: Settings },
       ];
     default:
       return [
-        { path: "/odb", label: "Agente ODB", icon: Sparkles },
+        { path: "/odb", label: "Agente ODB", icon: ODBIcon },
         { path: "/history", label: "Meus Lançamentos", icon: ClipboardList },
         { path: "/perfil", label: "Perfil", icon: User },
       ];
