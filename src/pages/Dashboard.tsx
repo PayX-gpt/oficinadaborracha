@@ -13,23 +13,40 @@ import ManufacturingAnalysis from "@/components/dashboard/ManufacturingAnalysis"
 import LiveFeed from "@/components/dashboard/LiveFeed";
 import AIInsights from "@/components/dashboard/AIInsights";
 import DetailedTable from "@/components/dashboard/DetailedTable";
+import FechamentoDiario from "@/components/dashboard/FechamentoDiario";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
   const [selectedBranch, setSelectedBranch] = useState("all");
   const [selectedPeriod, setSelectedPeriod] = useState("Hoje");
   const { data } = useDashboardData(selectedPeriod, selectedBranch);
 
+  const { data: filiais = [] } = useQuery({
+    queryKey: ["filiais-dash"],
+    queryFn: async () => { const { data } = await supabase.from("filiais").select("id, nome"); return data || []; },
+  });
+
   return (
     <div className="space-y-4 pb-24">
       <AnimatePresence mode="wait">
         <motion.div key={`${selectedBranch}-${selectedPeriod}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="space-y-4">
-          <DashboardHeader
-            selectedBranch={selectedBranch}
-            onBranchChange={setSelectedBranch}
-            selectedPeriod={selectedPeriod}
-            onPeriodChange={setSelectedPeriod}
-          />
+          <div className="flex items-center justify-between">
+            <DashboardHeader
+              selectedBranch={selectedBranch}
+              onBranchChange={setSelectedBranch}
+              selectedPeriod={selectedPeriod}
+              onPeriodChange={setSelectedPeriod}
+            />
+            <div className="flex gap-2">
+              {selectedBranch !== "all" ? (
+                <FechamentoDiario filialId={selectedBranch} filialNome={filiais.find(f => f.id === selectedBranch)?.nome || ""} />
+              ) : filiais.map(f => (
+                <FechamentoDiario key={f.id} filialId={f.id} filialNome={f.nome} />
+              ))}
+            </div>
+          </div>
           <KPICards data={data} />
           <OperationalMetrics data={data} />
           <FinancialHealth data={data} />
