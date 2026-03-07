@@ -22,6 +22,7 @@ interface ChatMessage {
   isDespesa?: boolean;
   isNotaPecas?: boolean;
   notaPecasData?: NotaPecasCard | null;
+  despesaData?: DespesaCard | null;
   awaitingObservation?: boolean;
 }
 
