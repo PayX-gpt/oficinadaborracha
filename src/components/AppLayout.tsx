@@ -1,9 +1,25 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, Navigate } from "react-router-dom";
 import AppHeader from "./AppHeader";
 import BottomNav from "./BottomNav";
 import DesktopSidebar from "./DesktopSidebar";
+import { useAuth } from "@/hooks/useAuth";
+import { Loader2 } from "lucide-react";
 
 const AppLayout = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center" style={{ background: "#070B14" }}>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
     <div className="min-h-screen" style={{ background: "#070B14" }}>
       <AppHeader />
