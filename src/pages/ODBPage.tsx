@@ -299,6 +299,12 @@ const ODBPage = () => {
             { label: "💰 Pagamento", value: "pagamento", variant: "primary" },
           ];
 
+      // Store card data for learning when confirmed
+      lastCardRef.current = {
+        card,
+        veiculo: result.veiculo ? { marca: result.veiculo.marca, modelo: result.veiculo.modelo } : null,
+      };
+
       addMessage({ type: "odb", content: extraContent, card, buttons });
     } catch (e: any) {
       console.error("ODB error:", e);
