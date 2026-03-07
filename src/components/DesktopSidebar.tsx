@@ -21,8 +21,15 @@ const DesktopSidebar = () => {
   };
 
   return (
-    <aside className="hidden md:flex fixed top-14 left-0 bottom-0 w-64 flex-col border-r border-border bg-card/50 backdrop-blur-lg p-4 z-40">
-      <div className="flex-1 space-y-1 mt-4">
+    <aside
+      className="hidden md:flex fixed top-12 left-0 bottom-0 w-60 flex-col border-r p-3 z-40"
+      style={{
+        background: "rgba(7,11,20,0.92)",
+        backdropFilter: "blur(16px)",
+        borderColor: "rgba(245,158,11,0.08)",
+      }}
+    >
+      <div className="flex-1 space-y-0.5 mt-3">
         {navItems.map((item) => {
           const isActive = location.pathname.startsWith(item.path);
           const Icon = item.icon;
@@ -30,13 +37,13 @@ const DesktopSidebar = () => {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+              className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-all ${
                 isActive
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  ? "bg-primary/10 text-primary border border-primary/15"
+                  : "text-muted-foreground hover:bg-secondary/30 hover:text-foreground border border-transparent"
               }`}
             >
-              <Icon className="h-5 w-5" />
+              <Icon className="h-4 w-4" />
               {item.label}
             </button>
           );
@@ -45,9 +52,9 @@ const DesktopSidebar = () => {
 
       <button
         onClick={handleLogout}
-        className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
+        className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-muted-foreground hover:bg-red-500/10 hover:text-red-400 transition-all"
       >
-        <LogOut className="h-5 w-5" />
+        <LogOut className="h-4 w-4" />
         Sair
       </button>
     </aside>
