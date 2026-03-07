@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, ClipboardList, Settings, Sparkles, Users, User, LogOut, MessageSquare } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Settings, Sparkles, Users, User, LogOut, MessageSquare, UserCircle } from "lucide-react";
 import { useAuth, UserRole } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
