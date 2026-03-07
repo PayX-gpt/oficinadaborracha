@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { Camera, Mic, MicOff, Pencil, Receipt, Sparkles, Send, X, Image, Loader2, Check, Paperclip, Plus } from "lucide-react";
+import { Camera, Mic, MicOff, Pencil, Receipt, Send, X, Image, Loader2, Check, Paperclip, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
+import odbLogo from "@/assets/odb-logo.png";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -330,11 +331,11 @@ const ODBPage = () => {
       {/* Compact header */}
       <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border/20" style={{ background: "rgba(7,11,20,0.8)", backdropFilter: "blur(20px)" }}>
         <motion.div
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 border border-primary/25"
+          className="flex h-9 w-9 items-center justify-center rounded-full overflow-hidden border border-primary/25"
           animate={{ borderColor: ["hsl(var(--primary) / 0.15)", "hsl(var(--primary) / 0.4)", "hsl(var(--primary) / 0.15)"] }}
           transition={{ duration: 2, repeat: Infinity }}
         >
-          <Sparkles className="h-4 w-4 text-primary" />
+          <img src={odbLogo} alt="ODB" className="h-8 w-8 object-contain" />
         </motion.div>
         <div className="flex-1 min-w-0">
           <h2 className="text-sm font-bold text-foreground leading-tight">Agente ODB</h2>
@@ -361,7 +362,7 @@ const ODBPage = () => {
                 {/* ODB avatar + name */}
                 {msg.type === "odb" && (
                   <div className="flex items-center gap-1.5 mb-1 ml-1">
-                    <Sparkles className="h-2.5 w-2.5 text-primary" />
+                    <img src={odbLogo} alt="ODB" className="h-3.5 w-3.5 object-contain" />
                     <span className="text-[10px] font-semibold text-primary">ODB</span>
                   </div>
                 )}
