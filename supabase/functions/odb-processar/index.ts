@@ -25,8 +25,14 @@ REGRAS:
 6. Para peças compradas, ESTIME o custo se souber (o valor_cobrado é o preço ao cliente, custo_estimado é quanto a oficina pagou)
 7. Use o BANCO DE CONHECIMENTO abaixo para estimar custos com base no histórico de preços
 
-FORMATO DE RETORNO:
+DETECÇÃO DE TIPO DE DOCUMENTO:
+- Se a imagem contém uma NOTA FISCAL DE PEÇAS (NF, nota de compra de peças de fornecedor), retorne com "tipo_documento": "nota_pecas"
+- Se é um ORÇAMENTO ou NOTA DE SERVIÇO da oficina, retorne com "tipo_documento": "orcamento"
+- Se não conseguir identificar o tipo, retorne com "tipo_documento": "desconhecido" e pergunte ao usuário
+
+FORMATO PARA ORÇAMENTO/SERVIÇO:
 {
+  "tipo_documento": "orcamento",
   "confianca_geral": "alta|media|baixa",
   "cliente": {"nome": string|null, "telefone": string|null, "confianca": "alta|media|baixa", "cliente_existente_id": string|null},
   "veiculo": {"marca": string|null, "modelo": string|null, "ano": number|null, "placa": string|null, "confianca": "alta|media|baixa"},
@@ -41,13 +47,32 @@ FORMATO DE RETORNO:
   "campos_faltando": ["lista do que não identificou"],
   "correcoes_feitas": [{"original": string, "corrigido": string}],
   "transcricao": string|null
+}
+
+FORMATO PARA NOTA FISCAL DE PEÇAS:
+{
+  "tipo_documento": "nota_pecas",
+  "fornecedor": string|null,
+  "numero_nota": string|null,
+  "itens": [{"descricao": string, "quantidade": number, "valor_unitario": number, "valor_total": number}],
+  "valor_total": number,
+  "veiculo_sugerido": {"marca": string|null, "modelo": string|null, "placa": string|null, "confianca": "alta|media|baixa"} | null,
+  "confianca_veiculo": "alta|media|baixa",
+  "observacoes": string|null
+}
+
+FORMATO PARA DOCUMENTO DESCONHECIDO:
+{
+  "tipo_documento": "desconhecido",
+  "descricao_conteudo": string,
+  "observacoes": string
 }`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { tipo, conteudo, imageBase64, mimeType, salvar_aprendizado, itens_confirmados, veiculo_info } = await req.json();
+    const { tipo, conteudo, imageBase64, mimeType, observacao, salvar_aprendizado, itens_confirmados, veiculo_info } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -55,7 +80,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // ── LEARNING MODE: Save confirmed items to knowledge base ──
+    // ── LEARNING MODE ──
     if (salvar_aprendizado && itens_confirmados) {
       await saveLearnedCosts(supabase, itens_confirmados, veiculo_info);
       return new Response(JSON.stringify({ success: true, message: "Aprendizado salvo" }), {
@@ -63,43 +88,46 @@ serve(async (req) => {
       });
     }
 
-    // ── ANALYSIS MODE: Process input with AI ──
-    const [sinonimoRes, conhecimentoRes, clientesRes] = await Promise.all([
+    // ── ANALYSIS MODE ──
+    const [sinonimoRes, conhecimentoRes, clientesRes, veiculosRes] = await Promise.all([
       supabase.from("odb_sinonimos").select("termo_digitado, termo_correto").limit(200),
       supabase.from("odb_conhecimento_pecas").select("descricao_normalizada, veiculo_marca, veiculo_modelo, tipo, valor_medio, custo_medio, margem_media, total_lancamentos").order("total_lancamentos", { ascending: false }).limit(100),
       supabase.from("clientes").select("id, nome, telefone").order("created_at", { ascending: false }).limit(50),
+      supabase.from("veiculos").select("id, marca, modelo, placa, ano, cliente_id").order("created_at", { ascending: false }).limit(50),
     ]);
 
     const sinonimos = sinonimoRes.data || [];
     const conhecimento = conhecimentoRes.data || [];
     const clientes = clientesRes.data || [];
+    const veiculos = veiculosRes.data || [];
 
     const contextPrompt = `
 SINÔNIMOS CONHECIDOS:
 ${sinonimos.map(s => `${s.termo_digitado} → ${s.termo_correto}`).join(", ")}
 
-BANCO DE CONHECIMENTO (peças com histórico de preços — USE para estimar custos):
+BANCO DE CONHECIMENTO (peças com histórico de preços):
 ${conhecimento.length > 0 
   ? conhecimento.map(k => 
-      `• ${k.descricao_normalizada} (${k.veiculo_marca || "qualquer"} ${k.veiculo_modelo || ""}) = ${k.tipo}, preço médio R$ ${k.valor_medio}, custo médio R$ ${k.custo_medio || "?"}, margem ${k.margem_media || "?"}%, ${k.total_lancamentos}x usado`
+      `- ${k.descricao_normalizada} (${k.veiculo_marca || "qualquer"} ${k.veiculo_modelo || ""}) = ${k.tipo}, preço médio R$ ${k.valor_medio}, custo médio R$ ${k.custo_medio || "?"}, ${k.total_lancamentos}x usado`
     ).join("\n")
-  : "Nenhum dado histórico ainda. Não estime custos sem base."}
+  : "Nenhum dado histórico ainda."}
 
 CLIENTES RECENTES:
-${clientes.map(c => `${c.nome} (${c.telefone || "sem tel"})`).join(", ")}`;
+${clientes.map(c => `${c.nome} (${c.telefone || "sem tel"})`).join(", ")}
+
+VEÍCULOS ATIVOS NA OFICINA:
+${veiculos.map(v => `${v.marca} ${v.modelo} ${v.ano || ""} ${v.placa || ""}`).join(", ") || "Nenhum"}`;
 
     const messages: any[] = [
       { role: "system", content: SYSTEM_PROMPT + "\n\n" + contextPrompt },
     ];
 
     if (tipo === "foto" && imageBase64) {
-      messages.push({
-        role: "user",
-        content: [
-          { type: "text", text: "Analise esta foto de orçamento/nota de serviço e extraia todos os dados estruturados. Retorne JSON." },
-          { type: "image_url", image_url: { url: `data:${mimeType || "image/jpeg"};base64,${imageBase64}` } },
-        ],
-      });
+      const userContent: any[] = [
+        { type: "text", text: `Analise esta imagem. Identifique se é um orçamento/nota de serviço ou uma nota fiscal de peças de fornecedor. Extraia todos os dados estruturados conforme o formato apropriado.${observacao ? ` Observação do operador: "${observacao}"` : ""} Retorne JSON.` },
+        { type: "image_url", image_url: { url: `data:${mimeType || "image/jpeg"};base64,${imageBase64}` } },
+      ];
+      messages.push({ role: "user", content: userContent });
     } else if (tipo === "audio" && conteudo) {
       messages.push({
         role: "user",
@@ -162,7 +190,6 @@ ${clientes.map(c => `${c.nome} (${c.telefone || "sem tel"})`).join(", ")}`;
 });
 
 // ── LEARNING FUNCTION ──
-// Saves confirmed item costs to odb_conhecimento_pecas so the AI can reference them in future analyses
 async function saveLearnedCosts(
   supabase: any,
   itens: Array<{ descricao: string; tipo: string; valor_cobrado: number; custo: number }>,
@@ -176,7 +203,6 @@ async function saveLearnedCosts(
     const modelo = veiculo?.modelo?.toLowerCase().trim() || null;
     const margem = item.custo > 0 ? ((item.valor_cobrado - item.custo) / item.custo) * 100 : null;
 
-    // Check if this part+vehicle combo already exists
     let query = supabase
       .from("odb_conhecimento_pecas")
       .select("*")
@@ -190,7 +216,6 @@ async function saveLearnedCosts(
     const { data: existing } = await query.maybeSingle();
 
     if (existing) {
-      // Update running averages
       const count = (existing.total_lancamentos || 0) + 1;
       const newValorMedio = ((existing.valor_medio || 0) * (count - 1) + item.valor_cobrado) / count;
       const newCustoMedio = item.custo > 0
@@ -210,7 +235,6 @@ async function saveLearnedCosts(
         updated_at: new Date().toISOString(),
       }).eq("id", existing.id);
     } else {
-      // Insert new knowledge
       await supabase.from("odb_conhecimento_pecas").insert({
         descricao_normalizada: descNorm,
         tipo: item.tipo || null,
