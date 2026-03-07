@@ -58,6 +58,15 @@ interface NotaPecasCard {
   confianca_veiculo: string;
 }
 
+interface DespesaCard {
+  categoria: string;
+  descricao: string;
+  valor: number | null;
+  metodo_pagamento?: string;
+  pago_por?: string;
+  observacoes?: string;
+}
+
 const despesaCategorias = [
   { icon: Wrench, label: "Peças/Fornecedor", group: "direto" },
   { icon: Layers, label: "Matéria-Prima", group: "direto" },
