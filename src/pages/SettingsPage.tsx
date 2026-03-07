@@ -161,7 +161,53 @@ const SettingsPage = () => {
     onError: (e: any) => toast.error(e.message),
   });
 
-  // Pay selected employees
+  // Custos Fixos CRUD
+  const cfCategorias = ["Aluguel", "Energia/Água", "Internet/Telefone", "Contador", "Impostos", "Seguro", "Manutenção", "Software/Sistema", "Outros"];
+
+  const addCustoFixo = useMutation({
+    mutationFn: async () => {
+      if (!newCFDesc.trim() || !newCFValor) return;
+      const { error } = await supabase.from("custos_fixos").insert({
+        descricao: newCFDesc.trim(),
+        valor: parseFloat(newCFValor),
+        categoria: newCFCategoria,
+        filial_id: newCFFilial || null,
+        dia_lancamento: parseInt(newCFDia) || 5,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["custos-fixos"] });
+      setNewCFDesc(""); setNewCFValor(""); setNewCFCategoria("Aluguel"); setNewCFFilial(""); setNewCFDia("5");
+      toast.success("Custo fixo adicionado!");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const deleteCustoFixo = useMutation({
+    mutationFn: async (id: string) => { const { error } = await supabase.from("custos_fixos").delete().eq("id", id); if (error) throw error; },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["custos-fixos"] }); toast.success("Custo fixo removido!"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const updateCFValor = async (id: string) => {
+    const val = parseFloat(editCFValor);
+    if (isNaN(val)) return;
+    const { error } = await supabase.from("custos_fixos").update({ valor: val }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    queryClient.invalidateQueries({ queryKey: ["custos-fixos"] });
+    setEditingCF(null);
+    toast.success("Valor atualizado!");
+  };
+
+  const toggleCFAtivo = async (id: string, ativo: boolean) => {
+    const { error } = await supabase.from("custos_fixos").update({ ativo: !ativo }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    queryClient.invalidateQueries({ queryKey: ["custos-fixos"] });
+  };
+
+  const totalCF = (custosFixos as any[]).filter((c: any) => c.ativo !== false).reduce((s: number, c: any) => s + Number(c.valor), 0);
+
   const pagarFuncionarios = async () => {
     if (payingFuncs.size === 0) { toast.error("Selecione pelo menos um funcionário"); return; }
     const saturday = getNextSaturday();
