@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Building2, Users, Percent, LogOut, Loader2, Plus, Trash2, Save, UserCheck, Briefcase, Calendar, DollarSign, Edit2, Check, X } from "lucide-react";
+import { Building2, Users, Percent, LogOut, Loader2, Plus, Trash2, Save, UserCheck, Briefcase, Calendar, DollarSign, Edit2, Check, X, Bell } from "lucide-react";
+import NotificationSettings from "@/components/NotificationSettings";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -491,6 +492,10 @@ const SettingsPage = () => {
           </div>
         </SectionCard>
       )}
+
+      <SectionCard icon={Bell} title="Notificações & WhatsApp" defaultOpen={false}>
+        <NotificationSettings />
+      </SectionCard>
 
       <Button onClick={handleLogout} disabled={loggingOut} variant="outline" className="w-full h-11 border-red-500/30 text-red-400 hover:bg-red-500/10 gap-2">
         {loggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}

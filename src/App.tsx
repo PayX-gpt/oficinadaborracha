@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import OfflineIndicator from "@/components/OfflineIndicator";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
@@ -20,6 +21,7 @@ import ChatFinanceiro from "./pages/ChatFinanceiro";
 import ClientesPage from "./pages/ClientesPage";
 import PecasPage from "./pages/PecasPage";
 import RelatoriosIA from "./pages/RelatoriosIA";
+import InstallPage from "./pages/InstallPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +32,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <OfflineIndicator />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />
@@ -49,6 +52,7 @@ const App = () => (
               <Route path="/clientes" element={<ClientesPage />} />
               <Route path="/pecas" element={<PecasPage />} />
               <Route path="/relatorios" element={<RelatoriosIA />} />
+              <Route path="/install" element={<InstallPage />} />
               <Route path="/equipe" element={<div className="text-foreground"><h2 className="text-lg font-bold">Equipe</h2><p className="text-xs text-muted-foreground">Em breve — gestão de gerentes e operadores</p></div>} />
               <Route path="/perfil" element={<div className="text-foreground"><h2 className="text-lg font-bold">Meu Perfil</h2><p className="text-xs text-muted-foreground">Em breve</p></div>} />
             </Route>
