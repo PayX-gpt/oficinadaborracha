@@ -25,10 +25,19 @@ REGRAS:
 6. Para peças compradas, ESTIME o custo se souber (o valor_cobrado é o preço ao cliente, custo_estimado é quanto a oficina pagou)
 7. Use o BANCO DE CONHECIMENTO abaixo para estimar custos com base no histórico de preços
 
-DETECÇÃO DE TIPO DE DOCUMENTO:
+CLASSIFICAÇÃO INTELIGENTE:
+Ao receber qualquer texto ou áudio, você DEVE primeiro classificar a intenção em uma das 3 categorias:
+1. "orcamento" — O operador está descrevendo um serviço/orçamento de cliente (menção a peças, serviços, veículo, cliente)
+2. "despesa" — O operador está registrando uma saída/gasto da oficina (aluguel, conta de luz, compra de material, alimentação, salário, etc.)
+3. "nota_pecas" — O operador está descrevendo ou enviando uma nota fiscal de peças compradas de fornecedor
+4. "incompleto" — Você não conseguiu entender ou faltam informações essenciais para classificar
+
+Se a informação for AMBÍGUA ou INSUFICIENTE, retorne tipo_documento "incompleto" com uma pergunta clara sobre o que falta.
+
+Para imagens:
 - Se a imagem contém uma NOTA FISCAL DE PEÇAS (NF, nota de compra de peças de fornecedor), retorne com "tipo_documento": "nota_pecas"
 - Se é um ORÇAMENTO ou NOTA DE SERVIÇO da oficina, retorne com "tipo_documento": "orcamento"
-- Se não conseguir identificar o tipo, retorne com "tipo_documento": "desconhecido" e pergunte ao usuário
+- Se não conseguir identificar o tipo, retorne com "tipo_documento": "incompleto" e pergunte ao usuário
 
 FORMATO PARA ORÇAMENTO/SERVIÇO:
 {
@@ -49,6 +58,19 @@ FORMATO PARA ORÇAMENTO/SERVIÇO:
   "transcricao": string|null
 }
 
+FORMATO PARA DESPESA:
+{
+  "tipo_documento": "despesa",
+  "categoria": string (ex: "Aluguel", "Energia/Água", "Alimentação", "Salário", "Peças/Fornecedor", "Matéria-Prima", "Ferramentas", "Imposto/Contador", "Aporte Sócio", "Outros"),
+  "descricao": string,
+  "valor": number|null,
+  "metodo_pagamento": string|null,
+  "pago_por": string|null,
+  "observacoes": string|null,
+  "campos_faltando": ["lista do que não identificou — ex: valor, categoria"],
+  "transcricao": string|null
+}
+
 FORMATO PARA NOTA FISCAL DE PEÇAS:
 {
   "tipo_documento": "nota_pecas",
@@ -61,11 +83,13 @@ FORMATO PARA NOTA FISCAL DE PEÇAS:
   "observacoes": string|null
 }
 
-FORMATO PARA DOCUMENTO DESCONHECIDO:
+FORMATO PARA INFORMAÇÃO INCOMPLETA:
 {
-  "tipo_documento": "desconhecido",
-  "descricao_conteudo": string,
-  "observacoes": string
+  "tipo_documento": "incompleto",
+  "categoria_provavel": "orcamento|despesa|nota_pecas|desconhecido",
+  "dados_parciais": {qualquer dado que conseguiu extrair},
+  "pergunta": "Pergunta clara e objetiva ao operador sobre o que falta",
+  "transcricao": string|null
 }`;
 
 serve(async (req) => {
@@ -131,12 +155,12 @@ ${veiculos.map(v => `${v.marca} ${v.modelo} ${v.ano || ""} ${v.placa || ""}`).jo
     } else if (tipo === "audio" && conteudo) {
       messages.push({
         role: "user",
-        content: `Transcrição do operador (pode ter erros, abreviações, gírias): "${conteudo}"\n\nExtraia os dados estruturados. Inclua o campo "transcricao" com a versão corrigida do texto. Retorne JSON.`,
+        content: `Transcrição do operador (pode ter erros, abreviações, gírias): "${conteudo}"\n\nClassifique se é um ORÇAMENTO de cliente, uma DESPESA da oficina ou PEÇAS COMPRADAS de fornecedor. Se não conseguir classificar ou faltar informação essencial, peça mais detalhes. Extraia os dados estruturados conforme o formato apropriado. Inclua o campo "transcricao" com a versão corrigida do texto. Retorne JSON.`,
       });
     } else if (tipo === "texto" && conteudo) {
       messages.push({
         role: "user",
-        content: `Texto do operador (pode ter erros, abreviações, gírias): "${conteudo}"\n\nExtraia os dados estruturados. Retorne JSON.`,
+        content: `Texto do operador (pode ter erros, abreviações, gírias): "${conteudo}"\n\nClassifique se é um ORÇAMENTO de cliente, uma DESPESA da oficina ou PEÇAS COMPRADAS de fornecedor. Se não conseguir classificar ou faltar informação essencial, peça mais detalhes. Extraia os dados estruturados conforme o formato apropriado. Retorne JSON.`,
       });
     } else {
       return new Response(JSON.stringify({ error: "Tipo ou conteúdo inválido" }), {

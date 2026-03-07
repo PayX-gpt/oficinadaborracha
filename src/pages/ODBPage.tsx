@@ -22,6 +22,7 @@ interface ChatMessage {
   isDespesa?: boolean;
   isNotaPecas?: boolean;
   notaPecasData?: NotaPecasCard | null;
+  despesaData?: DespesaCard | null;
   awaitingObservation?: boolean;
 }
 
@@ -55,6 +56,15 @@ interface NotaPecasCard {
   valor_total: number;
   veiculo_sugerido?: { marca: string; modelo: string; placa?: string; confianca: string };
   confianca_veiculo: string;
+}
+
+interface DespesaCard {
+  categoria: string;
+  descricao: string;
+  valor: number | null;
+  metodo_pagamento?: string;
+  pago_por?: string;
+  observacoes?: string;
 }
 
 const despesaCategorias = [
@@ -298,6 +308,17 @@ const ODBPage = () => {
       return;
     }
 
+    if (button.value === "confirmar_despesa") {
+      addMessage({
+        type: "odb",
+        content: "Despesa registrada com sucesso.",
+        buttons: [
+          { label: "Novo lançamento", value: "novo", variant: "primary" },
+        ],
+      });
+      return;
+    }
+
     if (button.value === "confirmar_nota") {
       addMessage({
         type: "odb",
@@ -398,6 +419,64 @@ const ODBPage = () => {
       const result = data?.result;
       if (!result || result.raw) {
         addMessage({ type: "odb", content: `Não consegui analisar completamente. ${result?.raw || "Tente novamente."}` });
+        setIsProcessing(false);
+        return;
+      }
+
+      // ── INCOMPLETO — precisa de mais informações ──
+      if (result.tipo_documento === "incompleto") {
+        let msg = result.pergunta || "Não consegui entender completamente. Pode fornecer mais detalhes?";
+        if (result.transcricao) msg = `"${result.transcricao}"\n\n${msg}`;
+        if (result.categoria_provavel && result.categoria_provavel !== "desconhecido") {
+          msg = `Parece ser um registro de **${result.categoria_provavel === "orcamento" ? "orçamento" : result.categoria_provavel === "despesa" ? "despesa" : "nota de peças"}**, mas preciso de mais informações.\n\n${msg}`;
+        }
+        addMessage({ type: "odb", content: msg });
+        inputRef.current?.focus();
+        setIsProcessing(false);
+        return;
+      }
+
+      // ── DESPESA DETECTION ──
+      if (result.tipo_documento === "despesa") {
+        const despesa: DespesaCard = {
+          categoria: result.categoria || "Outros",
+          descricao: result.descricao || "",
+          valor: result.valor || null,
+          metodo_pagamento: result.metodo_pagamento,
+          pago_por: result.pago_por,
+          observacoes: result.observacoes,
+        };
+
+        if (result.campos_faltando?.length > 0 && result.campos_faltando.includes("valor")) {
+          addMessage({
+            type: "odb",
+            content: `Identifiquei uma **despesa** de **${despesa.categoria}**${despesa.descricao ? `: ${despesa.descricao}` : ""}.\n\nQual o valor?`,
+            isDespesa: true,
+            despesaData: despesa,
+          });
+          inputRef.current?.focus();
+          setIsProcessing(false);
+          return;
+        }
+
+        let resumo = `Identifiquei uma **despesa**. Confira o resumo:\n\n`;
+        resumo += `**Categoria:** ${despesa.categoria}\n`;
+        if (despesa.descricao) resumo += `**Descrição:** ${despesa.descricao}\n`;
+        if (despesa.valor) resumo += `**Valor:** R$ ${despesa.valor.toFixed(2)}\n`;
+        if (despesa.metodo_pagamento) resumo += `**Pagamento:** ${despesa.metodo_pagamento}\n`;
+        if (despesa.observacoes) resumo += `**Obs:** ${despesa.observacoes}\n`;
+        if (result.transcricao) resumo = `"${result.transcricao}"\n\n${resumo}`;
+
+        addMessage({
+          type: "odb",
+          content: resumo,
+          isDespesa: true,
+          despesaData: despesa,
+          buttons: [
+            { label: "Confirmar despesa", value: "confirmar_despesa", variant: "success" },
+            { label: "Corrigir", value: "corrigir_resumo", variant: "warning" },
+          ],
+        });
         setIsProcessing(false);
         return;
       }
@@ -518,6 +597,7 @@ const ODBPage = () => {
       action_foto: Camera, action_audio: Mic, action_nota: FileText, action_despesa: Receipt,
       process_image_now: ArrowRight, add_observation: Edit,
       confirmar_resumo: Check, corrigir_resumo: Edit, confirmar_nota: Check, corrigir_veiculo: Car,
+      confirmar_despesa: Check,
       entrada: Clock, pagamento: CreditCard,
       pix: Zap, dinheiro: Banknote, debito: CreditCard, credito: CreditCard, misto: Layers,
       novo: RotateCcw, historico: History, valor_despesa: DollarSign,
@@ -679,6 +759,39 @@ const ODBPage = () => {
                       <div className="flex items-center justify-between pt-2 border-t border-blue-400/15">
                         <span className="text-[11px] font-bold text-blue-400">TOTAL</span>
                         <span className="text-[13px] font-bold text-foreground tabular-nums">R$ {msg.notaPecasData.valor_total.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  )}
+                  {/* Despesa Card */}
+                  {msg.despesaData && (
+                    <div className="mt-3 space-y-2 bg-background/30 rounded-xl p-3 border border-red-500/15">
+                      <div className="flex items-center gap-2">
+                        <Receipt className="h-3.5 w-3.5 text-red-400" />
+                        <span className="font-semibold text-[12px]">Despesa</span>
+                      </div>
+                      <div className="space-y-1 text-[11px]">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Categoria</span>
+                          <span className="text-foreground font-medium">{msg.despesaData.categoria}</span>
+                        </div>
+                        {msg.despesaData.descricao && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Descrição</span>
+                            <span className="text-foreground">{msg.despesaData.descricao}</span>
+                          </div>
+                        )}
+                        {msg.despesaData.valor != null && (
+                          <div className="flex justify-between pt-1 border-t border-red-500/10">
+                            <span className="font-bold text-red-400">VALOR</span>
+                            <span className="font-bold text-foreground tabular-nums">R$ {msg.despesaData.valor.toFixed(2)}</span>
+                          </div>
+                        )}
+                        {msg.despesaData.metodo_pagamento && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Pagamento</span>
+                            <span className="text-foreground">{msg.despesaData.metodo_pagamento}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
