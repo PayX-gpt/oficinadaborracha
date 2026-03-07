@@ -14,6 +14,20 @@ export interface DashboardData {
   lucroLiquido: number;
   totalServicos: number;
   ticketMedio: number;
+  // Comparatives (vs previous period)
+  prevReceita: number;
+  prevLucroBruto: number;
+  prevLucroLiquido: number;
+  prevDespesas: number;
+  prevTicketMedio: number;
+  prevServicos: number;
+  // Sparkline data (last 7 data points)
+  sparkReceita: number[];
+  sparkLucroBruto: number[];
+  sparkLucroLiquido: number[];
+  sparkDespesas: number[];
+  sparkTicket: number[];
+  sparkGanhoHora: number[];
   // Payment methods breakdown
   paymentMethods: { method: string; qty: number; bruto: number; taxas: number; liquido: number; percent: number; color: string }[];
   // Hourly breakdown
@@ -41,6 +55,10 @@ export interface DashboardData {
   topServices: { pos: number; nome: string; veiculo: string; qty: number; receita: number; custo: number; margem: number; lucro: number }[];
   lowMarginServices: { pos: number; nome: string; qty: number; receita: number; custo: number; margem: number; lucro: number }[];
   vehicleRanking: { veiculo: string; servicos: number; receita: number; ticket: number; servicoComum: string }[];
+  // Branch comparison
+  branchComparison: { filial: string; filialId: string; receita: number; lucro: number; servicos: number; ticket: number }[];
+  // Month projection
+  monthProjection: { receitaProj: number; lucroProj: number; diasPassados: number; diasNoMes: number; progressPercent: number };
 }
 
 const PAYMENT_COLORS: Record<string, string> = {
@@ -76,31 +94,99 @@ function getDateRange(period: string): { start: Date; end?: Date } {
   }
 }
 
+function getPreviousRange(period: string): { start: Date; end: Date } {
+  const now = new Date();
+  switch (period) {
+    case "Hoje": {
+      const s = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+      const e = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      return { start: s, end: e };
+    }
+    case "Ontem": {
+      const s = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 2);
+      const e = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+      return { start: s, end: e };
+    }
+    case "7 Dias": {
+      const s = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 14);
+      const e = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+      return { start: s, end: e };
+    }
+    case "30 Dias": {
+      const s = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 60);
+      const e = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
+      return { start: s, end: e };
+    }
+    case "Este Mês": {
+      const s = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const e = new Date(now.getFullYear(), now.getMonth(), 1);
+      return { start: s, end: e };
+    }
+    case "Mês Anterior": {
+      const s = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+      const e = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      return { start: s, end: e };
+    }
+    default: {
+      const s = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+      const e = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      return { start: s, end: e };
+    }
+  }
+}
+
 export function useDashboardData(period: string, branch: string = "all") {
   return useQuery({
     queryKey: ["dashboard", period, branch],
     queryFn: async (): Promise<DashboardData> => {
       const { start, end } = getDateRange(period);
+      const prev = getPreviousRange(period);
       const isoStart = start.toISOString();
 
       let lancQ = supabase.from("lancamentos").select("*").gte("created_at", isoStart);
       let despQ = supabase.from("despesas").select("*").gte("created_at", isoStart);
       let itemsQ = supabase.from("lancamento_items").select("*").gte("created_at", isoStart);
 
+      // Previous period
+      let prevLancQ = supabase.from("lancamentos").select("valor_bruto, custo_total, desconto, taxa_valor").gte("created_at", prev.start.toISOString()).lt("created_at", prev.end.toISOString());
+      let prevDespQ = supabase.from("despesas").select("valor").gte("created_at", prev.start.toISOString()).lt("created_at", prev.end.toISOString());
+
+      // Sparkline: last 7 days
+      const spark7Start = new Date();
+      spark7Start.setDate(spark7Start.getDate() - 7);
+      spark7Start.setHours(0, 0, 0, 0);
+      let sparkLancQ = supabase.from("lancamentos").select("created_at, valor_bruto, custo_total, desconto, taxa_valor").gte("created_at", spark7Start.toISOString());
+      let sparkDespQ = supabase.from("despesas").select("created_at, valor").gte("created_at", spark7Start.toISOString());
+
+      // Branch comparison
+      let branchLancQ = supabase.from("lancamentos").select("filial_id, valor_bruto, lucro").gte("created_at", isoStart);
+      let filiaisQ = supabase.from("filiais").select("id, nome").eq("ativa", true);
+
       if (end) {
         lancQ = lancQ.lt("created_at", end.toISOString());
         despQ = despQ.lt("created_at", end.toISOString());
         itemsQ = itemsQ.lt("created_at", end.toISOString());
+        branchLancQ = branchLancQ.lt("created_at", end.toISOString());
       }
       if (branch !== "all") {
         lancQ = lancQ.eq("filial_id", branch);
         despQ = despQ.eq("filial_id", branch);
+        prevLancQ = prevLancQ.eq("filial_id", branch);
+        prevDespQ = prevDespQ.eq("filial_id", branch);
+        sparkLancQ = sparkLancQ.eq("filial_id", branch);
+        sparkDespQ = sparkDespQ.eq("filial_id", branch);
       }
 
-      const [lancRes, despRes, itemsRes] = await Promise.all([
+      const [lancRes, despRes, itemsRes, prevLancRes, prevDespRes, sparkLancRes, sparkDespRes, branchLancRes, filiaisRes] = await Promise.all([
         lancQ.order("created_at", { ascending: false }),
         despQ.order("created_at", { ascending: false }),
         itemsQ.order("created_at", { ascending: false }),
+        prevLancQ,
+        prevDespQ,
+        sparkLancQ,
+        sparkDespQ,
+        branchLancQ,
+        filiaisQ,
       ]);
 
       if (lancRes.error) throw lancRes.error;
@@ -121,6 +207,81 @@ export function useDashboardData(period: string, branch: string = "all") {
       const totalServicos = lancamentos.length;
       const ticketMedio = totalServicos > 0 ? totalReceita / totalServicos : 0;
 
+      // Previous period totals
+      const prevLancs = prevLancRes.data || [];
+      const prevDesps = prevDespRes.data || [];
+      const prevReceita = prevLancs.reduce((s, l) => s + Number(l.valor_bruto), 0);
+      const prevCusto = prevLancs.reduce((s, l) => s + Number(l.custo_total), 0);
+      const prevDesconto = prevLancs.reduce((s, l) => s + Number(l.desconto), 0);
+      const prevTaxasVal = prevLancs.reduce((s, l) => s + Number(l.taxa_valor), 0);
+      const prevDespesasVal = prevDesps.reduce((s, d) => s + Number(d.valor), 0);
+      const prevLucroBruto = prevReceita - prevCusto;
+      const prevLucroLiquido = prevReceita - prevCusto - prevDespesasVal - prevTaxasVal - prevDesconto;
+      const prevServicos = prevLancs.length;
+      const prevTicketMedio = prevServicos > 0 ? prevReceita / prevServicos : 0;
+
+      // Sparkline data: aggregate by day for last 7 days
+      const sparkLancs = sparkLancRes.data || [];
+      const sparkDesps = sparkDespRes.data || [];
+      const sparkDayMap = new Map<string, { receita: number; custo: number; desconto: number; taxas: number; despesas: number; servicos: number }>();
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().split("T")[0];
+        sparkDayMap.set(key, { receita: 0, custo: 0, desconto: 0, taxas: 0, despesas: 0, servicos: 0 });
+      }
+      sparkLancs.forEach(l => {
+        const key = new Date(l.created_at).toISOString().split("T")[0];
+        const cur = sparkDayMap.get(key);
+        if (cur) {
+          cur.receita += Number(l.valor_bruto);
+          cur.custo += Number(l.custo_total);
+          cur.desconto += Number(l.desconto);
+          cur.taxas += Number(l.taxa_valor);
+          cur.servicos++;
+        }
+      });
+      sparkDesps.forEach(d => {
+        const key = new Date(d.created_at).toISOString().split("T")[0];
+        const cur = sparkDayMap.get(key);
+        if (cur) cur.despesas += Number(d.valor);
+      });
+      const sparkArr = Array.from(sparkDayMap.values());
+      const sparkReceita = sparkArr.map(d => d.receita);
+      const sparkLucroBruto = sparkArr.map(d => d.receita - d.custo);
+      const sparkLucroLiquido = sparkArr.map(d => d.receita - d.custo - d.despesas - d.taxas - d.desconto);
+      const sparkDespesasArr = sparkArr.map(d => d.despesas);
+      const sparkTicket = sparkArr.map(d => d.servicos > 0 ? d.receita / d.servicos : 0);
+      const sparkGanhoHora = sparkArr.map(d => d.servicos > 0 ? (d.receita - d.custo - d.despesas - d.taxas - d.desconto) / (d.servicos * 0.5) : 0);
+
+      // Branch comparison
+      const branchLancs = branchLancRes.data || [];
+      const filiais = filiaisRes.data || [];
+      const branchMap = new Map<string, { receita: number; lucro: number; servicos: number }>();
+      branchLancs.forEach(l => {
+        const fid = l.filial_id || "sem_filial";
+        const cur = branchMap.get(fid) || { receita: 0, lucro: 0, servicos: 0 };
+        cur.receita += Number(l.valor_bruto);
+        cur.lucro += Number(l.lucro);
+        cur.servicos++;
+        branchMap.set(fid, cur);
+      });
+      const branchComparison = filiais.map(f => {
+        const d = branchMap.get(f.id) || { receita: 0, lucro: 0, servicos: 0 };
+        return { filial: f.nome, filialId: f.id, receita: d.receita, lucro: d.lucro, servicos: d.servicos, ticket: d.servicos > 0 ? Math.round(d.receita / d.servicos) : 0 };
+      }).sort((a, b) => b.receita - a.receita);
+
+      // Month projection
+      const now = new Date();
+      const diasNoMes = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const diasPassados = now.getDate();
+      const mediaDiaria = diasPassados > 0 ? totalReceita / diasPassados : 0;
+      const mediaLucroDiario = diasPassados > 0 ? lucroLiquido / diasPassados : 0;
+      const receitaProj = mediaDiaria * diasNoMes;
+      const lucroProj = mediaLucroDiario * diasNoMes;
+      const progressPercent = Math.round((diasPassados / diasNoMes) * 100);
+      const monthProjection = { receitaProj, lucroProj, diasPassados, diasNoMes, progressPercent };
+
       // Payment methods
       const pmMap = new Map<string, { qty: number; bruto: number; taxas: number }>();
       lancamentos.forEach((l) => {
@@ -133,10 +294,7 @@ export function useDashboardData(period: string, branch: string = "all") {
       });
       const paymentMethods = Array.from(pmMap.entries())
         .map(([method, v]) => ({
-          method,
-          qty: v.qty,
-          bruto: v.bruto,
-          taxas: v.taxas,
+          method, qty: v.qty, bruto: v.bruto, taxas: v.taxas,
           liquido: v.bruto - v.taxas,
           percent: totalReceita > 0 ? Math.round((v.bruto / totalReceita) * 100) : 0,
           color: PAYMENT_COLORS[method] || "#64748B",
@@ -165,14 +323,13 @@ export function useDashboardData(period: string, branch: string = "all") {
       });
       const expenseCategories = Array.from(ecMap.entries())
         .map(([category, value], i) => ({
-          category,
-          value,
+          category, value,
           percent: totalDespesas > 0 ? Math.round((value / totalDespesas) * 100) : 0,
           color: EXPENSE_COLORS[i % EXPENSE_COLORS.length],
         }))
         .sort((a, b) => b.value - a.value);
 
-      // Revenue/Profit by day of week
+      // Revenue/Profit by day
       const dayRevMap = new Map<number, { maoDeObra: number; fabricadas: number; compradas: number; total: number; custo: number }>();
       lancamentos.forEach((l) => {
         const dow = new Date(l.created_at).getDay();
@@ -182,7 +339,6 @@ export function useDashboardData(period: string, branch: string = "all") {
         dayRevMap.set(dow, cur);
       });
 
-      // Aggregate items by type per day
       const itemsByLanc = new Map<string, any[]>();
       items.forEach((it) => {
         const arr = itemsByLanc.get(it.lancamento_id) || [];
@@ -200,10 +356,7 @@ export function useDashboardData(period: string, branch: string = "all") {
           else if (it.tipo === "comprada" || it.tipo === "peca_comprada") cur.compradas += val;
           else cur.maoDeObra += val;
         });
-        // If no items, attribute to mao_de_obra
-        if (litems.length === 0) {
-          cur.maoDeObra += Number(l.valor_bruto);
-        }
+        if (litems.length === 0) cur.maoDeObra += Number(l.valor_bruto);
       });
 
       const revenueByDay = [1, 2, 3, 4, 5, 6, 0].map((dow) => {
@@ -223,14 +376,13 @@ export function useDashboardData(period: string, branch: string = "all") {
         return { day: DAYS[dow], lucroBruto: rev.total - rev.custo, lucroLiquido: rev.total - rev.custo - desp };
       });
 
-      // Manufacturing (items with tipo='fabricada')
+      // Manufacturing
       const fabItems = items.filter((it) => it.tipo === "fabricada" || it.tipo === "peca_fabricada");
       const mfgReceita = fabItems.reduce((s, it) => s + Number(it.valor_cobrado), 0);
       const mfgCusto = fabItems.reduce((s, it) => s + Number(it.custo), 0);
       const mfgPecas = fabItems.length;
       const mfgMargem = mfgReceita > 0 ? Math.round(((mfgReceita - mfgCusto) / mfgReceita) * 100) : 0;
 
-      // Manufacturing timeline by day
       const mfgDayMap = new Map<number, { receita: number; custo: number }>();
       fabItems.forEach((it) => {
         const dow = new Date(it.created_at).getDay();
@@ -245,53 +397,38 @@ export function useDashboardData(period: string, branch: string = "all") {
       });
 
       const manufacturing = {
-        receita: mfgReceita,
-        custoMP: mfgCusto,
-        margem: mfgMargem,
-        pecas: mfgPecas,
+        receita: mfgReceita, custoMP: mfgCusto, margem: mfgMargem, pecas: mfgPecas,
         custoMedioPeca: mfgPecas > 0 ? mfgCusto / mfgPecas : 0,
         precoMedioCobrado: mfgPecas > 0 ? mfgReceita / mfgPecas : 0,
         roi: mfgCusto > 0 ? Number((mfgReceita / mfgCusto).toFixed(1)) : 0,
         timeline: mfgTimeline,
       };
 
-      // Operational metrics
+      // Operational
       const compItems = items.filter((it) => it.tipo === "comprada" || it.tipo === "peca_comprada");
       const compReceita = compItems.reduce((s, it) => s + Number(it.valor_cobrado), 0);
       const compCusto = compItems.reduce((s, it) => s + Number(it.custo), 0);
-
       const descontoCount = lancamentos.filter((l) => Number(l.desconto) > 0).length;
       const creditoTaxas = lancamentos.filter((l) => (l.metodo_pagamento || "").toLowerCase().includes("créd")).reduce((s, l) => s + Number(l.taxa_valor), 0);
       const debitoTaxas = lancamentos.filter((l) => (l.metodo_pagamento || "").toLowerCase().includes("déb")).reduce((s, l) => s + Number(l.taxa_valor), 0);
 
       const operational = {
-        margemFabricadas: {
-          percent: mfgMargem,
-          receita: mfgReceita,
-          custo: mfgCusto,
-          pecas: mfgPecas,
-        },
+        margemFabricadas: { percent: mfgMargem, receita: mfgReceita, custo: mfgCusto, pecas: mfgPecas },
         margemCompradas: {
           percent: compReceita > 0 ? Math.round(((compReceita - compCusto) / compReceita) * 100) : 0,
-          receita: compReceita,
-          custo: compCusto,
-          pecas: compItems.length,
+          receita: compReceita, custo: compCusto, pecas: compItems.length,
         },
         taxaDesconto: {
           percent: totalServicos > 0 ? Math.round((descontoCount / totalServicos) * 100) : 0,
-          total: totalDesconto,
-          count: descontoCount,
-          media: descontoCount > 0 ? totalDesconto / descontoCount : 0,
+          total: totalDesconto, count: descontoCount, media: descontoCount > 0 ? totalDesconto / descontoCount : 0,
         },
         impactoTaxas: {
           percent: totalReceita > 0 ? Number(((totalTaxas / totalReceita) * 100).toFixed(1)) : 0,
-          total: totalTaxas,
-          credito: creditoTaxas,
-          debito: debitoTaxas,
+          total: totalTaxas, credito: creditoTaxas, debito: debitoTaxas,
         },
       };
 
-      // Service intelligence - group by item description
+      // Service intelligence
       const svcMap = new Map<string, { qty: number; receita: number; custo: number; veiculos: Map<string, number> }>();
       items.forEach((it) => {
         const desc = it.descricao || "Serviço";
@@ -299,11 +436,8 @@ export function useDashboardData(period: string, branch: string = "all") {
         cur.qty++;
         cur.receita += Number(it.valor_cobrado);
         cur.custo += Number(it.custo);
-        // Find parent lancamento for vehicle info
         const parent = lancamentos.find((l) => l.id === it.lancamento_id);
-        if (parent?.veiculo_desc) {
-          cur.veiculos.set(parent.veiculo_desc, (cur.veiculos.get(parent.veiculo_desc) || 0) + 1);
-        }
+        if (parent?.veiculo_desc) cur.veiculos.set(parent.veiculo_desc, (cur.veiculos.get(parent.veiculo_desc) || 0) + 1);
         svcMap.set(desc, cur);
       });
 
@@ -316,16 +450,8 @@ export function useDashboardData(period: string, branch: string = "all") {
         return { nome, qty: v.qty, receita: v.receita, custo: v.custo, margem, lucro, veiculo: topVeiculo };
       });
 
-      const topServices = allServices
-        .sort((a, b) => b.lucro - a.lucro)
-        .slice(0, 5)
-        .map((s, i) => ({ ...s, pos: i + 1 }));
-
-      const lowMarginServices = allServices
-        .filter((s) => s.margem < 50 && s.qty > 0)
-        .sort((a, b) => a.margem - b.margem)
-        .slice(0, 5)
-        .map((s, i) => ({ ...s, pos: i + 1 }));
+      const topServices = allServices.sort((a, b) => b.lucro - a.lucro).slice(0, 5).map((s, i) => ({ ...s, pos: i + 1 }));
+      const lowMarginServices = allServices.filter((s) => s.margem < 50 && s.qty > 0).sort((a, b) => a.margem - b.margem).slice(0, 5).map((s, i) => ({ ...s, pos: i + 1 }));
 
       // Vehicle ranking
       const vMap = new Map<string, { servicos: number; receita: number; items: Map<string, number> }>();
@@ -335,20 +461,14 @@ export function useDashboardData(period: string, branch: string = "all") {
         cur.servicos++;
         cur.receita += Number(l.valor_bruto);
         const litems = itemsByLanc.get(l.id) || [];
-        litems.forEach((it) => {
-          cur.items.set(it.descricao, (cur.items.get(it.descricao) || 0) + 1);
-        });
+        litems.forEach((it) => { cur.items.set(it.descricao, (cur.items.get(it.descricao) || 0) + 1); });
         vMap.set(v, cur);
       });
       const vehicleRanking = Array.from(vMap.entries())
         .map(([veiculo, v]) => ({
-          veiculo,
-          servicos: v.servicos,
-          receita: v.receita,
+          veiculo, servicos: v.servicos, receita: v.receita,
           ticket: v.servicos > 0 ? Math.round(v.receita / v.servicos) : 0,
-          servicoComum: v.items.size > 0
-            ? Array.from(v.items.entries()).sort((a, b) => b[1] - a[1])[0][0]
-            : "—",
+          servicoComum: v.items.size > 0 ? Array.from(v.items.entries()).sort((a, b) => b[1] - a[1])[0][0] : "—",
         }))
         .sort((a, b) => b.receita - a.receita)
         .slice(0, 10);
@@ -357,9 +477,12 @@ export function useDashboardData(period: string, branch: string = "all") {
         lancamentos, despesas, items,
         totalReceita, totalCusto, totalDespesas, totalDesconto, totalTaxas,
         lucroBruto, lucroLiquido, totalServicos, ticketMedio,
+        prevReceita, prevLucroBruto, prevLucroLiquido, prevDespesas: prevDespesasVal, prevTicketMedio, prevServicos,
+        sparkReceita, sparkLucroBruto, sparkLucroLiquido, sparkDespesas: sparkDespesasArr, sparkTicket, sparkGanhoHora,
         paymentMethods, hourlyRevenue, expenseCategories,
         revenueByDay, profitByDay, manufacturing, operational,
         topServices, lowMarginServices, vehicleRanking,
+        branchComparison, monthProjection,
       };
     },
     refetchInterval: 30000,

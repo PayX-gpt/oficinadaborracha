@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, ComposedChart } from "recharts";
+import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, ComposedChart, Cell } from "recharts";
+import { Trophy } from "lucide-react";
 import type { DashboardData } from "@/hooks/useDashboardData";
 
 const formatCurrency = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
-const tabs = ["Receita", "Lucro", "Despesas"];
+const tabs = ["Receita", "Lucro", "Despesas", "Filiais"];
+const BRANCH_COLORS = ["#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899", "#06B6D4"];
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
@@ -23,11 +25,14 @@ const PerformanceCharts = ({ data }: { data?: DashboardData }) => {
   const revenueByDay = data?.revenueByDay ?? [];
   const profitByDay = data?.profitByDay ?? [];
   const expenseCategories = data?.expenseCategories ?? [];
+  const branchComparison = data?.branchComparison ?? [];
 
   const totalMO = revenueByDay.reduce((s, d) => s + d.maoDeObra, 0);
   const totalFab = revenueByDay.reduce((s, d) => s + d.fabricadas, 0);
   const totalComp = revenueByDay.reduce((s, d) => s + d.compradas, 0);
   const totalAll = totalMO + totalFab + totalComp || 1;
+
+  const bestBranch = branchComparison.length > 0 ? branchComparison[0] : null;
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6, duration: 0.4 }}
@@ -68,7 +73,7 @@ const PerformanceCharts = ({ data }: { data?: DashboardData }) => {
                   <div key={m.label} className="rounded-lg p-2 bg-secondary/30 text-center">
                     <div className={`h-1 w-5 rounded-full ${m.color} mx-auto mb-1.5`} />
                     <p className="text-[10px] text-muted-foreground truncate">{m.label}</p>
-                    <p className="text-xs font-bold text-foreground">{formatCurrency(m.value)}</p>
+                    <p className="text-xs font-bold text-foreground tabular-nums">{formatCurrency(m.value)}</p>
                     <p className="text-[10px] text-muted-foreground">{m.pct}%</p>
                   </div>
                 ))}
@@ -106,10 +111,47 @@ const PerformanceCharts = ({ data }: { data?: DashboardData }) => {
                   <div className="w-12 sm:w-20 h-2.5 rounded-full bg-secondary/30 overflow-hidden shrink-0">
                     <motion.div initial={{ width: 0 }} animate={{ width: `${e.percent}%` }} transition={{ duration: 0.8, delay: 0.2 }} className="h-full rounded-full" style={{ backgroundColor: e.color }} />
                   </div>
-                  <span className="text-[10px] font-medium text-foreground shrink-0">{formatCurrency(e.value)}</span>
+                  <span className="text-[10px] font-medium text-foreground shrink-0 tabular-nums">{formatCurrency(e.value)}</span>
                   <span className="text-[10px] text-muted-foreground shrink-0">{e.percent}%</span>
                 </div>
               ))}
+            </div>
+          )}
+
+          {activeTab === "Filiais" && (
+            <div className="space-y-3">
+              {branchComparison.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-8">Nenhuma filial cadastrada</p>
+              ) : (
+                <>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={branchComparison}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                      <XAxis dataKey="filial" tick={{ fill: "#64748B", fontSize: 10 }} />
+                      <YAxis tick={{ fill: "#64748B", fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} width={35} />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Bar dataKey="receita" name="Receita" radius={[4, 4, 0, 0]}>
+                        {branchComparison.map((_, i) => <Cell key={i} fill={BRANCH_COLORS[i % BRANCH_COLORS.length]} />)}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                  <div className="space-y-1.5">
+                    {branchComparison.map((b, i) => (
+                      <div key={b.filialId} className="flex items-center gap-2 py-1.5 px-2 rounded-lg bg-secondary/20 text-[11px]">
+                        <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: BRANCH_COLORS[i % BRANCH_COLORS.length] }} />
+                        <span className="text-foreground flex-1 min-w-0 truncate font-medium">{b.filial}</span>
+                        {i === 0 && bestBranch && (
+                          <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-primary/20 text-primary shrink-0">
+                            <Trophy className="h-2.5 w-2.5" /> #1
+                          </span>
+                        )}
+                        <span className="text-muted-foreground shrink-0 tabular-nums">{b.servicos}x</span>
+                        <span className="text-foreground font-medium shrink-0 tabular-nums">{formatCurrency(b.receita)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           )}
         </motion.div>
