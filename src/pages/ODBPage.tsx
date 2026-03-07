@@ -1,14 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { Camera, Mic, Pencil, Receipt, Sparkles, Send, X, Image, Loader2, Check, ChevronDown } from "lucide-react";
+import { Camera, Mic, MicOff, Pencil, Receipt, Sparkles, Send, X, Image, Loader2, Check, Paperclip, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 type MessageType = "user" | "odb" | "system";
-type InputMode = null | "foto" | "audio" | "texto" | "despesa";
 
 interface ChatMessage {
   id: string;
@@ -19,6 +17,7 @@ interface ChatMessage {
   audioUrl?: string;
   card?: ODBCard | null;
   buttons?: ChatButton[];
+  isDespesa?: boolean;
 }
 
 interface ChatButton {
@@ -44,13 +43,6 @@ interface ODBCard {
   status?: "aguardando" | "confirmado";
 }
 
-const actionButtons = [
-  { mode: "foto" as InputMode, label: "Foto", icon: Camera, color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
-  { mode: "audio" as InputMode, label: "Áudio", icon: Mic, color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/20" },
-  { mode: "texto" as InputMode, label: "Texto", icon: Pencil, color: "text-primary", bg: "bg-primary/10 border-primary/20" },
-  { mode: "despesa" as InputMode, label: "Despesa", icon: Receipt, color: "text-red-400", bg: "bg-red-500/10 border-red-500/20" },
-];
-
 const despesaCategorias = [
   { icon: "🔧", label: "Peças/Fornecedor" },
   { icon: "🧱", label: "Matéria-Prima" },
@@ -67,15 +59,20 @@ const despesaCategorias = [
 const ODBPage = () => {
   const { profile } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputMode, setInputMode] = useState<InputMode>(null);
   const [textInput, setTextInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isFormMode, setIsFormMode] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [showDespesaMenu, setShowDespesaMenu] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const recognitionRef = useRef<any>(null);
+  const [transcript, setTranscript] = useState("");
 
   const isGerente = profile?.role === "gerente";
 
@@ -85,7 +82,7 @@ const ODBPage = () => {
         {
           id: "welcome",
           type: "odb",
-          content: `Olá${profile?.nome ? `, ${profile.nome}` : ""}! Sou o Agente ODB 🤖\n\nManda foto, áudio ou texto do serviço que eu organizo tudo.\nQuanto mais eu trabalho, mais inteligente fico!`,
+          content: `Olá${profile?.nome ? `, ${profile.nome}` : ""}! 👋\n\nSou o Agente ODB — seu assistente inteligente.\n\n📸 Envie uma foto do orçamento\n🎤 Grave um áudio descrevendo o serviço\n✍️ Ou simplesmente digite\n💸 Clique no ícone de despesa para registrar saídas`,
           timestamp: new Date(),
         },
       ]);
@@ -100,17 +97,11 @@ const ODBPage = () => {
     setMessages((prev) => [...prev, { ...msg, id: crypto.randomUUID(), timestamp: new Date() }]);
   };
 
-  const handlePhotoCapture = () => {
-    fileInputRef.current?.click();
-  };
-
+  // ── FILE HANDLING ──
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        resolve(result.split(",")[1]);
-      };
+      reader.onload = () => resolve((reader.result as string).split(",")[1]);
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
@@ -121,65 +112,98 @@ const ODBPage = () => {
     if (!file) return;
     const url = URL.createObjectURL(file);
     addMessage({ type: "user", content: "📸 Foto do orçamento", imageUrl: url });
-    setInputMode(null);
-    
-    // Convert to base64 and send to AI
+    setShowAttachMenu(false);
     try {
       const base64 = await fileToBase64(file);
       processWithODB("foto", "", base64, file.type);
     } catch {
       processWithODB("foto", "Foto enviada para análise");
     }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleStartRecording = () => {
-    setIsRecording(true);
-    setRecordingTime(0);
-    timerRef.current = setInterval(() => setRecordingTime((t) => t + 1), 1000);
-    toast.info("Gravando áudio...");
+  // ── AUDIO RECORDING ──
+  const handleStartRecording = async () => {
+    setShowAttachMenu(false);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+      mediaRecorder.ondataavailable = (e) => chunksRef.current.push(e.data);
+      mediaRecorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+      };
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      setTranscript("");
+      timerRef.current = setInterval(() => setRecordingTime((t) => t + 1), 1000);
+
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = "pt-BR";
+        recognition.onresult = (event: any) => {
+          let full = "";
+          for (let i = 0; i < event.results.length; i++) full += event.results[i][0].transcript;
+          setTranscript(full);
+        };
+        recognition.start();
+        recognitionRef.current = recognition;
+      }
+    } catch {
+      toast.error("Não foi possível acessar o microfone.");
+    }
   };
 
   const handleStopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    recognitionRef.current?.stop();
     setIsRecording(false);
     if (timerRef.current) clearInterval(timerRef.current);
-    addMessage({ type: "user", content: `🎤 Áudio gravado (${recordingTime}s)` });
-    setInputMode(null);
-    processWithODB("audio", "Áudio enviado para análise");
+    const finalTranscript = transcript || "Áudio sem transcrição detectada";
+    addMessage({ type: "user", content: `🎤 ${finalTranscript}` });
+    processWithODB("audio", finalTranscript);
   };
 
+  // ── TEXT SUBMIT ──
   const handleTextSubmit = () => {
     if (!textInput.trim()) return;
     addMessage({ type: "user", content: textInput });
     const text = textInput;
     setTextInput("");
-    setInputMode(null);
     processWithODB("texto", text);
   };
 
+  // ── DESPESA ──
   const handleDespesaSelect = (categoria: string) => {
-    addMessage({ type: "user", content: `📋 Despesa: ${categoria}` });
-    setInputMode(null);
+    setShowDespesaMenu(false);
+    addMessage({ type: "user", content: `💸 Despesa: ${categoria}`, isDespesa: true });
     addMessage({
       type: "odb",
-      content: `Certo! Despesa de ${categoria}.\n\nQual o valor?`,
+      content: `Certo! Despesa de **${categoria}**.\n\nQual o valor?`,
       buttons: [
         { label: "Informar valor", value: "valor_despesa", variant: "primary" },
       ],
     });
   };
 
+  // ── BUTTON ACTIONS ──
   const handleButtonClick = (button: ChatButton) => {
     addMessage({ type: "user", content: button.label });
 
     if (button.value === "entrada") {
       addMessage({
         type: "odb",
-        content: "Entendi! Salvei como serviço em andamento. 🔔\n\nQuando o carro ficar pronto, é só abrir aqui que eu lembro de tudo!\n\nO serviço vai aparecer na aba \"Em Andamento\" do Dashboard com destaque.",
+        content: "Salvo como serviço em andamento! 🔔\n\nQuando o carro ficar pronto, abra aqui que eu lembro de tudo.",
       });
     } else if (button.value === "pagamento") {
       addMessage({
         type: "odb",
-        content: "Quase lá! Só mais isso:",
+        content: "Como foi o pagamento?",
         buttons: [
           { label: "PIX", value: "pix", variant: "success" },
           { label: "Dinheiro", value: "dinheiro", variant: "default" },
@@ -190,27 +214,26 @@ const ODBPage = () => {
       });
     } else if (["pix", "dinheiro", "debito", "credito", "misto"].includes(button.value)) {
       const metodo = button.label;
-      const resumo = `Salvo! 🎉\n\n═══ RESUMO FINAL ═══\n👤 Cliente • 🚗 Veículo\n\n💰 Total: R$ 730,00 via ${metodo}\n${!isGerente ? "📊 Lucro bruto: R$ 580,00 (margem 79.5%)\n⚡ Ganho/hora: R$ 121,50/h\n\n💪 Bom serviço! Margem acima da média." : ""}`;
+      const resumo = `Salvo! 🎉\n\n💰 Total via ${metodo}\n${!isGerente ? "📊 Margem calculada automaticamente\n⚡ Ganho/hora registrado" : ""}\n\n💪 Bom serviço!`;
       addMessage({
         type: "odb",
         content: resumo,
         buttons: [
-          { label: "📋 Ver no Histórico", value: "historico", variant: "default" },
+          { label: "📋 Ver Histórico", value: "historico", variant: "default" },
           { label: "🔄 Novo Lançamento", value: "novo", variant: "primary" },
         ],
       });
     } else if (button.value === "novo") {
-      setMessages([
-        {
-          id: crypto.randomUUID(),
-          type: "odb",
-          content: `Pronto para o próximo! Manda foto, áudio ou texto. 🚀`,
-          timestamp: new Date(),
-        },
-      ]);
+      setMessages([{
+        id: crypto.randomUUID(),
+        type: "odb",
+        content: "Pronto para o próximo! 🚀",
+        timestamp: new Date(),
+      }]);
     }
   };
 
+  // ── AI PROCESSING ──
   const processWithODB = async (fonte: string, content: string, imageBase64?: string, mimeType?: string) => {
     setIsProcessing(true);
     try {
@@ -223,18 +246,15 @@ const ODBPage = () => {
       }
 
       const { data, error } = await supabase.functions.invoke("odb-processar", { body });
-
       if (error) throw error;
 
       const result = data?.result;
       if (!result || result.raw) {
-        // Fallback: show raw response
         addMessage({ type: "odb", content: `Não consegui analisar completamente. ${result?.raw || "Tente novamente."}` });
         setIsProcessing(false);
         return;
       }
 
-      // Build card from AI response
       const allDianteira = (result.itens_dianteira || []).map((it: any) => ({
         descricao: it.descricao, tipo: it.tipo, valor: it.valor_cobrado || 0, confianca: it.confianca || "media",
       }));
@@ -255,44 +275,33 @@ const ODBPage = () => {
           ano: result.veiculo.ano, placa: result.veiculo.placa,
           confianca: result.veiculo.confianca || "media",
         } : undefined,
-        itens_dianteira: allDianteira.length > 0 ? allDianteira : undefined,
+        itens_dianteira: allDianteira.length > 0 ? allDianteira : (allGeral.length > 0 ? allGeral : undefined),
         itens_traseira: allTraseira.length > 0 ? allTraseira : undefined,
         subtotal,
         status: "aguardando",
       };
 
-      // Add general items to dianteira if no position specified
-      if (allGeral.length > 0 && !allDianteira.length && !allTraseira.length) {
-        card.itens_dianteira = allGeral;
-      }
-
       let extraContent = "Entendi! Aqui está o que identifiquei:";
-      if (result.transcricao) {
-        extraContent = `📝 Transcrição: "${result.transcricao}"\n\n${extraContent}`;
-      }
+      if (result.transcricao) extraContent = `📝 "${result.transcricao}"\n\n${extraContent}`;
       if (result.correcoes_feitas?.length > 0) {
         extraContent += `\n\n🔧 Correções: ${result.correcoes_feitas.map((c: any) => `${c.original} → ${c.corrigido}`).join(", ")}`;
       }
 
-      const buttons: ChatButton[] = [];
-      if (result.metodo_pagamento) {
-        // AI already identified payment, go straight to confirm
-        buttons.push(
-          { label: "✅ Confirmar e Salvar", value: "pagamento_direto_" + result.metodo_pagamento, variant: "success" },
-          { label: "✏️ Editar algo", value: "pagamento", variant: "default" },
-        );
-      } else {
-        buttons.push(
-          { label: "⏳ Entrada — carro fica na oficina", value: "entrada", variant: "default" },
-          { label: "💰 Pagamento — serviço concluído", value: "pagamento", variant: "primary" },
-        );
-      }
+      const buttons: ChatButton[] = result.metodo_pagamento
+        ? [
+            { label: "✅ Confirmar e Salvar", value: "pagamento_direto_" + result.metodo_pagamento, variant: "success" },
+            { label: "✏️ Editar", value: "pagamento", variant: "default" },
+          ]
+        : [
+            { label: "⏳ Entrada", value: "entrada", variant: "default" },
+            { label: "💰 Pagamento", value: "pagamento", variant: "primary" },
+          ];
 
       addMessage({ type: "odb", content: extraContent, card, buttons });
     } catch (e: any) {
       console.error("ODB error:", e);
       toast.error(e?.message || "Erro ao processar com IA");
-      addMessage({ type: "odb", content: "😅 Desculpa, tive um problema. Tente novamente ou use o modo formulário." });
+      addMessage({ type: "odb", content: "😅 Desculpa, tive um problema. Tente novamente." });
     } finally {
       setIsProcessing(false);
     }
@@ -301,313 +310,363 @@ const ODBPage = () => {
   const formatTime = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
   const confiancaBadge = (c: string) => {
-    if (c === "alta") return <span className="text-[10px] text-emerald-400">✅ Alta</span>;
-    if (c === "media") return <span className="text-[10px] text-yellow-400">🟡 Média</span>;
-    return <span className="text-[10px] text-red-400">🔴 Baixa</span>;
+    if (c === "alta") return <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-medium">Alta</span>;
+    if (c === "media") return <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400 font-medium">Média</span>;
+    return <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-red-500/15 text-red-400 font-medium">Baixa</span>;
   };
 
   const tipoBadge = (t: string) => {
-    if (t === "peca_fabricada") return <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">🏭 Fabricada</span>;
-    if (t === "peca_comprada") return <span className="text-[10px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded">🛒 Comprada</span>;
-    if (t === "recuperacao") return <span className="text-[10px] text-violet-400 bg-violet-500/10 px-1.5 py-0.5 rounded">🔄 Recuperação</span>;
-    return <span className="text-[10px] text-muted-foreground bg-secondary/30 px-1.5 py-0.5 rounded">🔧 Mão de obra</span>;
+    const map: Record<string, { label: string; cls: string }> = {
+      peca_fabricada: { label: "Fabricada", cls: "text-emerald-400 bg-emerald-500/10" },
+      peca_comprada: { label: "Comprada", cls: "text-blue-400 bg-blue-500/10" },
+      recuperacao: { label: "Recuperação", cls: "text-violet-400 bg-violet-500/10" },
+    };
+    const info = map[t] || { label: "Mão de obra", cls: "text-muted-foreground bg-secondary/30" };
+    return <span className={`text-[9px] px-1.5 py-0.5 rounded ${info.cls}`}>{info.label}</span>;
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-7.5rem)] md:h-[calc(100vh-4.5rem)]">
-      {/* Header */}
-      <div className="flex items-center justify-between px-1 pb-3">
-        <div className="flex items-center gap-3">
-          <motion.div
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 border border-primary/25"
-            animate={{ borderColor: ["rgba(245,158,11,0.15)", "rgba(245,158,11,0.4)", "rgba(245,158,11,0.15)"] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            <Sparkles className="h-5 w-5 text-primary" />
-          </motion.div>
-          <div>
-            <h2 className="text-sm font-bold text-foreground">Agente ODB</h2>
-            <p className="text-[10px] text-muted-foreground">Seu assistente inteligente</p>
+    <div className="flex flex-col h-[calc(100vh-7.5rem)] md:h-[calc(100vh-4.5rem)] -mx-3 md:-mx-4 -mt-3 md:-mt-4">
+      {/* Compact header */}
+      <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border/20" style={{ background: "rgba(7,11,20,0.8)", backdropFilter: "blur(20px)" }}>
+        <motion.div
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 border border-primary/25"
+          animate={{ borderColor: ["hsl(var(--primary) / 0.15)", "hsl(var(--primary) / 0.4)", "hsl(var(--primary) / 0.15)"] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <Sparkles className="h-4 w-4 text-primary" />
+        </motion.div>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-sm font-bold text-foreground leading-tight">Agente ODB</h2>
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="text-[10px] text-muted-foreground">Online • Assistente inteligente</span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] text-muted-foreground bg-secondary/30 px-2 py-1 rounded-full">🧠 0 serviços aprendidos</span>
-          <div className="flex items-center bg-secondary/30 rounded-lg overflow-hidden border border-border/30">
-            <button
-              onClick={() => setIsFormMode(false)}
-              className={`px-2.5 py-1 text-[10px] font-medium transition-colors ${!isFormMode ? "bg-primary/15 text-primary" : "text-muted-foreground"}`}
-            >
-              💬 Conversa
-            </button>
-            <button
-              onClick={() => setIsFormMode(true)}
-              className={`px-2.5 py-1 text-[10px] font-medium transition-colors ${isFormMode ? "bg-primary/15 text-primary" : "text-muted-foreground"}`}
-            >
-              📝 Formulário
-            </button>
-          </div>
-        </div>
+        <span className="text-[10px] text-muted-foreground bg-secondary/40 px-2 py-1 rounded-full shrink-0">🧠 IA</span>
       </div>
 
-      {isFormMode ? (
-        // Redirect to manual form
-        <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
-          <Sparkles className="h-12 w-12 text-primary/40 mb-4" />
-          <p className="text-sm text-muted-foreground mb-4">
-            O modo formulário usa a tela de lançamento manual com autocomplete inteligente do ODB.
-          </p>
-          <Button
-            onClick={() => window.location.href = "/launch/manual"}
-            className="bg-primary text-primary-foreground gap-2"
-          >
-            <Pencil className="h-4 w-4" /> Abrir Formulário
-          </Button>
-        </div>
-      ) : (
-        <>
-          {/* Chat area */}
-          <div className="flex-1 overflow-y-auto space-y-3 px-1 py-2 scrollbar-none">
-            <AnimatePresence>
-              {messages.map((msg) => (
-                <motion.div
-                  key={msg.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25 }}
-                  className={`flex ${msg.type === "user" ? "justify-end" : "justify-start"}`}
+      {/* Chat messages area */}
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 scrollbar-none">
+        <AnimatePresence>
+          {messages.map((msg) => (
+            <motion.div
+              key={msg.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+              className={`flex ${msg.type === "user" ? "justify-end" : "justify-start"}`}
+            >
+              <div className={`max-w-[88%] ${msg.type === "user" ? "" : ""}`}>
+                {/* ODB avatar + name */}
+                {msg.type === "odb" && (
+                  <div className="flex items-center gap-1.5 mb-1 ml-1">
+                    <Sparkles className="h-2.5 w-2.5 text-primary" />
+                    <span className="text-[10px] font-semibold text-primary">ODB</span>
+                  </div>
+                )}
+
+                <div
+                  className={`rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed ${
+                    msg.type === "user"
+                      ? msg.isDespesa
+                        ? "bg-red-500/15 text-foreground border border-red-500/20 rounded-br-sm"
+                        : "bg-primary/15 text-foreground border border-primary/20 rounded-br-sm"
+                      : "bg-secondary/50 text-foreground border border-border/15 rounded-bl-sm"
+                  }`}
                 >
-                  <div
-                    className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed ${
-                      msg.type === "user"
-                        ? "bg-primary/15 text-foreground border border-primary/20 rounded-br-md"
-                        : "bg-secondary/40 text-foreground border border-border/20 rounded-bl-md"
-                    }`}
-                  >
-                    {msg.type === "odb" && (
-                      <div className="flex items-center gap-1.5 mb-1.5">
-                        <Sparkles className="h-3 w-3 text-primary" />
-                        <span className="text-[10px] font-bold text-primary">Agente ODB</span>
-                      </div>
-                    )}
+                  {msg.imageUrl && (
+                    <img src={msg.imageUrl} alt="foto" className="rounded-lg mb-2 max-h-40 w-full object-cover" />
+                  )}
 
-                    {msg.imageUrl && (
-                      <img src={msg.imageUrl} alt="foto" className="rounded-lg mb-2 max-h-48 w-full object-cover" />
-                    )}
+                  <p className="whitespace-pre-line">{msg.content}</p>
 
-                    <p className="whitespace-pre-line">{msg.content}</p>
+                  {/* ODB Card */}
+                  {msg.card && (
+                    <div className="mt-3 space-y-2 bg-background/30 rounded-xl p-3 border border-border/20">
+                      {msg.card.cliente && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">👤</span>
+                          <span className="font-semibold text-[12px]">{msg.card.cliente.nome}</span>
+                          {confiancaBadge(msg.card.cliente.confianca)}
+                        </div>
+                      )}
+                      {msg.card.veiculo && (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm">🚗</span>
+                          <span className="text-[12px]">{msg.card.veiculo.marca} {msg.card.veiculo.modelo} {msg.card.veiculo.ano}</span>
+                          {msg.card.veiculo.placa && <span className="text-[10px] text-muted-foreground">• {msg.card.veiculo.placa}</span>}
+                          {confiancaBadge(msg.card.veiculo.confianca)}
+                        </div>
+                      )}
 
-                    {/* ODB Card */}
-                    {msg.card && (
-                      <div className="mt-3 space-y-2.5 bg-background/40 rounded-xl p-3 border border-border/30">
-                        {msg.card.cliente && (
-                          <div className="flex items-center gap-2">
-                            <span>👤</span>
-                            <span className="font-semibold text-[12px]">{msg.card.cliente.nome}</span>
-                            {confiancaBadge(msg.card.cliente.confianca)}
-                          </div>
-                        )}
-                        {msg.card.veiculo && (
-                          <div className="flex items-center gap-2">
-                            <span>🚗</span>
-                            <span className="text-[12px]">{msg.card.veiculo.marca} {msg.card.veiculo.modelo} {msg.card.veiculo.ano}</span>
-                            {msg.card.veiculo.placa && <span className="text-[10px] text-muted-foreground">• {msg.card.veiculo.placa}</span>}
-                            {confiancaBadge(msg.card.veiculo.confianca)}
-                          </div>
-                        )}
-
-                        {msg.card.itens_dianteira && msg.card.itens_dianteira.length > 0 && (
-                          <div>
-                            <p className="text-[10px] font-bold text-primary uppercase tracking-wider mb-1.5">═══ Dianteira ═══</p>
-                            {msg.card.itens_dianteira.map((item, i) => (
-                              <div key={i} className="flex items-center justify-between py-1 border-b border-border/10 last:border-0">
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-[11px] text-foreground truncate">{item.descricao}</p>
-                                  <div className="flex items-center gap-1.5 mt-0.5">{tipoBadge(item.tipo)}</div>
-                                </div>
-                                <span className="text-[12px] font-bold text-foreground ml-2 tabular-nums">R$ {item.valor.toFixed(2)}</span>
+                      {msg.card.itens_dianteira && msg.card.itens_dianteira.length > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-[9px] font-bold text-primary/70 uppercase tracking-widest">Dianteira</p>
+                          {msg.card.itens_dianteira.map((item, i) => (
+                            <div key={i} className="flex items-center justify-between py-0.5">
+                              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                <span className="text-[11px] text-foreground truncate">{item.descricao}</span>
+                                {tipoBadge(item.tipo)}
                               </div>
-                            ))}
-                          </div>
-                        )}
+                              <span className="text-[11px] font-bold text-foreground ml-2 tabular-nums">R$ {item.valor.toFixed(2)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
 
-                        {msg.card.itens_traseira && msg.card.itens_traseira.length > 0 && (
-                          <div>
-                            <p className="text-[10px] font-bold text-primary uppercase tracking-wider mb-1.5">═══ Traseira ═══</p>
-                            {msg.card.itens_traseira.map((item, i) => (
-                              <div key={i} className="flex items-center justify-between py-1 border-b border-border/10 last:border-0">
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-[11px] text-foreground truncate">{item.descricao}</p>
-                                  <div className="flex items-center gap-1.5 mt-0.5">{tipoBadge(item.tipo)}</div>
-                                </div>
-                                <span className="text-[12px] font-bold text-foreground ml-2 tabular-nums">R$ {item.valor.toFixed(2)}</span>
+                      {msg.card.itens_traseira && msg.card.itens_traseira.length > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-[9px] font-bold text-primary/70 uppercase tracking-widest">Traseira</p>
+                          {msg.card.itens_traseira.map((item, i) => (
+                            <div key={i} className="flex items-center justify-between py-0.5">
+                              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                <span className="text-[11px] text-foreground truncate">{item.descricao}</span>
+                                {tipoBadge(item.tipo)}
                               </div>
-                            ))}
-                          </div>
-                        )}
+                              <span className="text-[11px] font-bold text-foreground ml-2 tabular-nums">R$ {item.valor.toFixed(2)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
 
-                        {msg.card.subtotal && (
-                          <div className="flex items-center justify-between pt-2 border-t border-primary/20">
-                            <span className="text-[12px] font-bold text-primary">💰 SUBTOTAL</span>
-                            <span className="text-[14px] font-bold text-foreground tabular-nums">R$ {msg.card.subtotal.toFixed(2)}</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                      {msg.card.subtotal != null && msg.card.subtotal > 0 && (
+                        <div className="flex items-center justify-between pt-2 border-t border-primary/15">
+                          <span className="text-[11px] font-bold text-primary">TOTAL</span>
+                          <span className="text-[13px] font-bold text-foreground tabular-nums">R$ {msg.card.subtotal.toFixed(2)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-                    {/* Action Buttons */}
-                    {msg.buttons && msg.buttons.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        {msg.buttons.map((btn, i) => (
-                          <button
-                            key={i}
-                            onClick={() => handleButtonClick(btn)}
-                            className={`px-3 py-1.5 rounded-lg text-[11px] font-medium border transition-all active:scale-95 ${
-                              btn.variant === "primary"
-                                ? "bg-primary/15 text-primary border-primary/25 hover:bg-primary/25"
-                                : btn.variant === "success"
-                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/25 hover:bg-emerald-500/25"
-                                : "bg-secondary/30 text-foreground border-border/30 hover:bg-secondary/50"
-                            }`}
-                          >
-                            {btn.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    <p className="text-[9px] text-muted-foreground mt-1.5">
-                      {msg.timestamp.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-
-            {/* Processing indicator */}
-            {isProcessing && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
-                <div className="bg-secondary/40 border border-border/20 rounded-2xl rounded-bl-md px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-3 w-3 text-primary" />
-                    <span className="text-[10px] font-bold text-primary">Agente ODB</span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <div className="flex gap-1">
-                      {[0, 1, 2].map((i) => (
-                        <motion.div
+                  {/* Buttons */}
+                  {msg.buttons && msg.buttons.length > 0 && (
+                    <div className="mt-2.5 flex flex-wrap gap-1.5">
+                      {msg.buttons.map((btn, i) => (
+                        <button
                           key={i}
-                          className="w-1.5 h-1.5 rounded-full bg-primary"
-                          animate={{ opacity: [0.3, 1, 0.3] }}
-                          transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
-                        />
+                          onClick={() => handleButtonClick(btn)}
+                          className={`px-3 py-1.5 rounded-full text-[11px] font-medium border transition-all active:scale-95 ${
+                            btn.variant === "primary"
+                              ? "bg-primary/15 text-primary border-primary/25 hover:bg-primary/25"
+                              : btn.variant === "success"
+                              ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/25 hover:bg-emerald-500/25"
+                              : "bg-secondary/30 text-foreground border-border/30 hover:bg-secondary/50"
+                          }`}
+                        >
+                          {btn.label}
+                        </button>
                       ))}
                     </div>
-                    <span className="text-[11px] text-muted-foreground">Analisando...</span>
-                  </div>
+                  )}
                 </div>
-              </motion.div>
-            )}
 
-            <div ref={messagesEndRef} />
-          </div>
+                <p className={`text-[9px] text-muted-foreground/60 mt-0.5 ${msg.type === "user" ? "text-right mr-1" : "ml-1"}`}>
+                  {msg.timestamp.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
 
-          {/* Input area */}
-          <div className="border-t border-border/20 pt-3 pb-1">
-            {/* Recording UI */}
-            <AnimatePresence>
-              {isRecording && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className="flex flex-col items-center py-6"
-                >
-                  <motion.div
-                    className="flex h-20 w-20 items-center justify-center rounded-full bg-primary mb-3"
-                    animate={{ scale: [1, 1.1, 1], boxShadow: ["0 0 20px rgba(245,158,11,0.2)", "0 0 40px rgba(245,158,11,0.4)", "0 0 20px rgba(245,158,11,0.2)"] }}
-                    transition={{ duration: 1, repeat: Infinity }}
-                  >
-                    <Mic className="h-8 w-8 text-primary-foreground" />
-                  </motion.div>
-                  <p className="text-lg font-bold text-foreground tabular-nums">{formatTime(recordingTime)}</p>
-                  <p className="text-[11px] text-muted-foreground mt-1">Gravando... toque para parar</p>
-                  <Button onClick={handleStopRecording} variant="outline" size="sm" className="mt-3 gap-1.5">
-                    <Check className="h-3.5 w-3.5" /> Finalizar
-                  </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Text input mode */}
-            {inputMode === "texto" && !isRecording && (
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-3">
-                <div className="flex gap-2">
-                  <Input
-                    value={textInput}
-                    onChange={(e) => setTextInput(e.target.value)}
-                    placeholder="Descreva como quiser... Ex: 'Gol 2018 pastilha freio 120 pix'"
-                    className="flex-1 bg-secondary/30 border-border/30 text-sm h-10"
-                    style={{ fontSize: 16 }}
-                    onKeyDown={(e) => e.key === "Enter" && handleTextSubmit()}
-                    autoFocus
-                  />
-                  <Button onClick={handleTextSubmit} size="sm" className="h-10 w-10 p-0 bg-primary text-primary-foreground">
-                    <Send className="h-4 w-4" />
-                  </Button>
-                </div>
-                <button onClick={() => setInputMode(null)} className="text-[10px] text-muted-foreground mt-1.5 hover:text-foreground">
-                  ← Voltar
-                </button>
-              </motion.div>
-            )}
-
-            {/* Despesa category selection */}
-            {inputMode === "despesa" && !isRecording && (
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-3">
-                <p className="text-[11px] text-muted-foreground mb-2">Qual tipo de despesa?</p>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {despesaCategorias.map((cat) => (
-                    <button
-                      key={cat.label}
-                      onClick={() => handleDespesaSelect(cat.label)}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/30 border border-border/20 text-[11px] text-foreground hover:bg-secondary/50 transition-colors text-left"
-                    >
-                      <span>{cat.icon}</span>
-                      <span>{cat.label}</span>
-                    </button>
+        {/* Processing indicator */}
+        {isProcessing && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
+            <div className="bg-secondary/50 border border-border/15 rounded-2xl rounded-bl-sm px-4 py-3">
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1">
+                  {[0, 1, 2].map((i) => (
+                    <motion.div
+                      key={i}
+                      className="w-2 h-2 rounded-full bg-primary"
+                      animate={{ scale: [0.8, 1.2, 0.8], opacity: [0.4, 1, 0.4] }}
+                      transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.15 }}
+                    />
                   ))}
                 </div>
-                <button onClick={() => setInputMode(null)} className="text-[10px] text-muted-foreground mt-1.5 hover:text-foreground">
-                  ← Voltar
-                </button>
-              </motion.div>
-            )}
-
-            {/* Action buttons row */}
-            {!inputMode && !isRecording && (
-              <div className="flex gap-2">
-                {actionButtons.map((btn) => {
-                  const Icon = btn.icon;
-                  return (
-                    <motion.button
-                      key={btn.label}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => {
-                        if (btn.mode === "foto") handlePhotoCapture();
-                        else if (btn.mode === "audio") handleStartRecording();
-                        else setInputMode(btn.mode);
-                      }}
-                      className={`flex-1 flex items-center justify-center gap-1.5 h-12 rounded-xl border ${btn.bg} transition-all hover:scale-[1.02]`}
-                    >
-                      <Icon className={`h-4 w-4 ${btn.color}`} />
-                      <span className={`text-[11px] font-semibold ${btn.color}`}>{btn.label}</span>
-                    </motion.button>
-                  );
-                })}
+                <span className="text-[11px] text-muted-foreground">Analisando...</span>
               </div>
+            </div>
+          </motion.div>
+        )}
+
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Despesa category popup */}
+      <AnimatePresence>
+        {showDespesaMenu && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="mx-3 mb-2 p-3 rounded-2xl border border-border/20 bg-card/95 backdrop-blur-xl"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-semibold text-foreground">Tipo de despesa</span>
+              <button onClick={() => setShowDespesaMenu(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {despesaCategorias.map((cat) => (
+                <button
+                  key={cat.label}
+                  onClick={() => handleDespesaSelect(cat.label)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/40 border border-border/15 text-[11px] text-foreground hover:bg-secondary/60 transition-all active:scale-95 text-left"
+                >
+                  <span className="text-base">{cat.icon}</span>
+                  <span className="truncate">{cat.label}</span>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Attach menu popup */}
+      <AnimatePresence>
+        {showAttachMenu && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            className="mx-3 mb-2 flex gap-3"
+          >
+            <button
+              onClick={() => { fileInputRef.current?.click(); }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-medium hover:bg-blue-500/20 transition-all active:scale-95"
+            >
+              <Camera className="h-4 w-4" />
+              Câmera
+            </button>
+            <button
+              onClick={() => {
+                if (fileInputRef.current) {
+                  fileInputRef.current.removeAttribute("capture");
+                  fileInputRef.current.click();
+                }
+              }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-400 text-xs font-medium hover:bg-violet-500/20 transition-all active:scale-95"
+            >
+              <Image className="h-4 w-4" />
+              Galeria
+            </button>
+            <button
+              onClick={() => setShowAttachMenu(false)}
+              className="flex items-center justify-center w-10 rounded-xl bg-secondary/40 border border-border/20 text-muted-foreground hover:text-foreground transition-all"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Recording overlay */}
+      <AnimatePresence>
+        {isRecording && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mx-3 mb-2 p-4 rounded-2xl border border-red-500/20 bg-card/95 backdrop-blur-xl"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <motion.div
+                  className="w-3 h-3 rounded-full bg-red-500"
+                  animate={{ opacity: [1, 0.3, 1] }}
+                  transition={{ duration: 1, repeat: Infinity }}
+                />
+                <span className="text-lg font-mono font-bold text-foreground tabular-nums">{formatTime(recordingTime)}</span>
+                <div className="flex gap-0.5">
+                  {[...Array(5)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      animate={{ scaleY: [1, 2, 1] }}
+                      transition={{ repeat: Infinity, duration: 0.35, delay: i * 0.07 }}
+                      className="h-4 w-0.5 rounded-full bg-red-400 origin-center"
+                    />
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={handleStopRecording}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-red-500/15 border border-red-500/25 text-red-400 text-xs font-semibold hover:bg-red-500/25 transition-all active:scale-95"
+              >
+                <MicOff className="h-3.5 w-3.5" />
+                Parar
+              </button>
+            </div>
+            {transcript && (
+              <p className="text-[11px] text-muted-foreground mt-2 italic truncate">"{transcript}"</p>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── INPUT BAR ── ChatGPT style */}
+      {!isRecording && (
+        <div className="px-3 pb-2 pt-1.5 border-t border-border/15" style={{ background: "rgba(7,11,20,0.9)", backdropFilter: "blur(20px)" }}>
+          <div className="flex items-end gap-1.5">
+            {/* Attach button */}
+            <button
+              onClick={() => { setShowAttachMenu(!showAttachMenu); setShowDespesaMenu(false); }}
+              className={`flex items-center justify-center h-10 w-10 shrink-0 rounded-full transition-all ${
+                showAttachMenu ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+              }`}
+            >
+              <Plus className={`h-5 w-5 transition-transform ${showAttachMenu ? "rotate-45" : ""}`} />
+            </button>
+
+            {/* Despesa button */}
+            <button
+              onClick={() => { setShowDespesaMenu(!showDespesaMenu); setShowAttachMenu(false); }}
+              className={`flex items-center justify-center h-10 w-10 shrink-0 rounded-full transition-all ${
+                showDespesaMenu ? "bg-red-500/15 text-red-400" : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+              }`}
+              title="Registrar despesa"
+            >
+              <Receipt className="h-4.5 w-4.5" />
+            </button>
+
+            {/* Text input */}
+            <div className="flex-1 relative">
+              <input
+                ref={inputRef}
+                type="text"
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleTextSubmit()}
+                placeholder="Descreva o serviço..."
+                className="w-full h-10 px-4 rounded-full bg-secondary/40 border border-border/20 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/30 focus:ring-1 focus:ring-primary/20 transition-all"
+                style={{ fontSize: 16 }}
+                disabled={isProcessing}
+              />
+            </div>
+
+            {/* Mic or Send button */}
+            {textInput.trim() ? (
+              <motion.button
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                onClick={handleTextSubmit}
+                className="flex items-center justify-center h-10 w-10 shrink-0 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-90"
+                style={{ boxShadow: "0 0 12px hsl(var(--primary) / 0.3)" }}
+              >
+                <Send className="h-4 w-4" />
+              </motion.button>
+            ) : (
+              <button
+                onClick={handleStartRecording}
+                disabled={isProcessing}
+                className="flex items-center justify-center h-10 w-10 shrink-0 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-all disabled:opacity-40"
+              >
+                <Mic className="h-5 w-5" />
+              </button>
             )}
           </div>
-        </>
+        </div>
       )}
 
       <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileSelected} />
