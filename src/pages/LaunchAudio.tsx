@@ -191,7 +191,7 @@ const LaunchAudio = () => {
                 <div className="flex gap-2">
                   <Button onClick={() => { setAudioUrl(null); setTimer(0); setTranscript(""); }} variant="outline" className="flex-1 h-10 border-border/50 text-foreground hover:bg-secondary/50 text-sm">Regravar</Button>
                   <Button onClick={handleAnalyze} disabled={analyzing} className="flex-1 h-10 bg-primary text-primary-foreground hover:bg-primary/90 gap-2 text-sm" style={{ boxShadow: "0 0 16px rgba(245,158,11,0.2)" }}>
-                    {analyzing ? <><Loader2 className="h-4 w-4 animate-spin" /> Analisando...</> : <><Sparkles className="h-4 w-4" /> Extrair Dados</>}
+                    {analyzing ? <><Loader2 className="h-4 w-4 animate-spin" /> Analisando...</> : <><img src={odbLogo} alt="IA" className="h-4 w-4 object-contain" /> Extrair Dados</>}
                   </Button>
                 </div>
               </div>
