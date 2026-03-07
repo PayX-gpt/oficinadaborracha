@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { AreaChart, Area, ResponsiveContainer } from "recharts";
+import AnimatedCounter from "./AnimatedCounter";
 import type { DashboardData } from "@/hooks/useDashboardData";
 
 const formatCurrency = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
@@ -18,6 +19,8 @@ const FinancialHealth = ({ data }: { data?: DashboardData }) => {
   const cashData = data?.profitByDay?.map((d, i) => ({ day: i, value: Math.max(0, d.lucroLiquido) })) ||
     Array.from({ length: 7 }, (_, i) => ({ day: i, value: 0 }));
 
+  const proj = data?.monthProjection ?? { receitaProj: 0, lucroProj: 0, diasPassados: 0, diasNoMes: 30, progressPercent: 0 };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.4 }}
@@ -30,12 +33,15 @@ const FinancialHealth = ({ data }: { data?: DashboardData }) => {
           <div className="relative w-28 h-14 mx-auto">
             <svg viewBox="0 0 120 60" className="w-full h-full">
               <path d="M10 55 A50 50 0 0 1 110 55" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" strokeLinecap="round" />
-              <path d="M10 55 A50 50 0 0 1 110 55" fill="none"
+              <motion.path d="M10 55 A50 50 0 0 1 110 55" fill="none"
                 stroke={score > 60 ? "#10B981" : score > 30 ? "#F59E0B" : "#EF4444"}
-                strokeWidth="8" strokeLinecap="round" strokeDasharray={`${(score / 100) * 157} 157`} />
+                strokeWidth="8" strokeLinecap="round"
+                initial={{ strokeDasharray: "0 157" }}
+                animate={{ strokeDasharray: `${(score / 100) * 157} 157` }}
+                transition={{ duration: 1.2, delay: 0.5 }} />
             </svg>
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2">
-              <span className="text-xl font-bold text-foreground">{score}</span>
+              <span className="text-xl font-bold text-foreground tabular-nums">{score}</span>
               <span className="text-[10px] text-muted-foreground">/100</span>
             </div>
           </div>
@@ -48,8 +54,13 @@ const FinancialHealth = ({ data }: { data?: DashboardData }) => {
 
         {/* Fluxo de Caixa */}
         <div className="space-y-2">
-          <p className="text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-medium">Fluxo de Caixa</p>
-          <p className="text-xl font-bold text-foreground">{formatCurrency(caixa)}</p>
+          <p className="text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-medium">Caixa da Empresa</p>
+          <div className="flex items-center gap-2">
+            <p className="text-xl font-bold text-foreground tabular-nums">{formatCurrency(caixa)}</p>
+            {caixa < 0 && (
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-500/20 text-red-400 animate-pulse">NEGATIVO</span>
+            )}
+          </div>
           <div className="h-10">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={cashData}>
@@ -69,23 +80,34 @@ const FinancialHealth = ({ data }: { data?: DashboardData }) => {
           </div>
         </div>
 
-        {/* Resumo */}
+        {/* Projeção do Mês */}
         <div className="space-y-2">
-          <p className="text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-medium">Resumo</p>
-          <p className="text-xl font-bold text-foreground">{formatCurrency(totalReceita)}</p>
-          <p className="text-[10px] text-muted-foreground">Lucro líquido: {formatCurrency(lucroLiquido)}</p>
-          <div className="space-y-1">
-            <div className="flex justify-between text-[10px]">
-              <span className="text-muted-foreground">Margem</span>
-              <span className="text-foreground font-medium">{margem.toFixed(1)}%</span>
+          <p className="text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-medium">Projeção do Mês</p>
+          <div className="space-y-1.5">
+            <div>
+              <p className="text-[10px] text-muted-foreground">Receita Projetada</p>
+              <p className="text-lg font-bold text-foreground tabular-nums">
+                <AnimatedCounter value={proj.receitaProj} prefix="R$ " />
+              </p>
             </div>
-            <div className="h-1.5 rounded-full bg-secondary/50 overflow-hidden">
-              <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(100, Math.max(0, margem))}%` }}
-                transition={{ duration: 1, delay: 0.8 }}
-                className="h-full rounded-full bg-gradient-to-r from-primary to-amber-400" />
+            <div>
+              <p className="text-[10px] text-muted-foreground">Lucro Projetado</p>
+              <p className={`text-sm font-bold tabular-nums ${proj.lucroProj >= 0 ? "text-emerald-500" : "text-red-400"}`}>
+                <AnimatedCounter value={proj.lucroProj} prefix="R$ " />
+              </p>
+            </div>
+            <div className="space-y-1">
+              <div className="flex justify-between text-[10px]">
+                <span className="text-muted-foreground">Dia {proj.diasPassados}/{proj.diasNoMes}</span>
+                <span className="text-foreground font-medium">{proj.progressPercent}%</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-secondary/50 overflow-hidden">
+                <motion.div initial={{ width: 0 }} animate={{ width: `${proj.progressPercent}%` }}
+                  transition={{ duration: 1, delay: 0.8 }}
+                  className="h-full rounded-full bg-gradient-to-r from-primary to-amber-400" />
+              </div>
             </div>
           </div>
-          <p className="text-[10px] text-muted-foreground">Custo: {formatCurrency(totalCusto)}</p>
         </div>
       </div>
     </motion.div>
