@@ -407,6 +407,91 @@ const SettingsPage = () => {
         </div>
       </SectionCard>
 
+      {/* Custos Fixos */}
+      {isAdmin && (
+        <SectionCard icon={DollarSign} title="Custos Fixos Mensais" badge={`Total: ${fmt(totalCF)}/mês`}>
+          <div className="space-y-2">
+            {/* Grouped by category */}
+            {cfCategorias.map(cat => {
+              const items = (custosFixos as any[]).filter((c: any) => c.categoria === cat);
+              if (items.length === 0) return null;
+              return (
+                <div key={cat} className="space-y-1">
+                  <p className="text-[9px] font-bold text-muted-foreground/70 uppercase tracking-widest">{cat}</p>
+                  {items.map((cf: any) => (
+                    <div key={cf.id} className={`flex items-center gap-2 py-2 px-3 rounded-lg transition-colors ${cf.ativo === false ? "bg-secondary/10 opacity-50" : "bg-secondary/20"}`}>
+                      <button onClick={() => toggleCFAtivo(cf.id, cf.ativo !== false)}
+                        className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${cf.ativo !== false ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400" : "border-border/40 text-transparent"}`}>
+                        {cf.ativo !== false && <Check className="h-2.5 w-2.5" />}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs text-foreground truncate block">{cf.descricao}</span>
+                        <span className="text-[9px] text-muted-foreground">
+                          {filiais.find(f => f.id === cf.filial_id)?.nome || "Todas"} · Dia {cf.dia_lancamento || 5}
+                        </span>
+                      </div>
+                      {editingCF === cf.id ? (
+                        <div className="flex items-center gap-1">
+                          <Input type="number" value={editCFValor} onChange={e => setEditCFValor(e.target.value)}
+                            className="bg-background/20 border-border/40 h-6 text-xs w-20 text-right" autoFocus />
+                          <button onClick={() => updateCFValor(cf.id)} className="text-emerald-400 hover:text-emerald-300"><Check className="h-3 w-3" /></button>
+                          <button onClick={() => setEditingCF(null)} className="text-muted-foreground hover:text-foreground"><X className="h-3 w-3" /></button>
+                        </div>
+                      ) : (
+                        <button onClick={() => { setEditingCF(cf.id); setEditCFValor(String(Number(cf.valor))); }}
+                          className="text-xs font-bold text-primary shrink-0 hover:underline">
+                          {fmt(Number(cf.valor))}
+                        </button>
+                      )}
+                      <button onClick={() => deleteCustoFixo.mutate(cf.id)} className="text-red-400 hover:text-red-300 shrink-0"><Trash2 className="h-3 w-3" /></button>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+
+            {/* Uncategorized */}
+            {(custosFixos as any[]).filter((c: any) => !cfCategorias.includes(c.categoria || "")).length > 0 && (
+              <div className="space-y-1">
+                <p className="text-[9px] font-bold text-muted-foreground/70 uppercase tracking-widest">Outros</p>
+                {(custosFixos as any[]).filter((c: any) => !cfCategorias.includes(c.categoria || "")).map((cf: any) => (
+                  <div key={cf.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-secondary/20">
+                    <span className="text-xs text-foreground">{cf.descricao}</span>
+                    <span className="text-xs font-bold text-primary">{fmt(Number(cf.valor))}</span>
+                    <button onClick={() => deleteCustoFixo.mutate(cf.id)} className="text-red-400 hover:text-red-300"><Trash2 className="h-3 w-3" /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add new */}
+            <div className="border-t border-border/20 pt-3 space-y-2">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Adicionar Custo Fixo</p>
+              <div className="grid grid-cols-2 gap-2">
+                <Input placeholder="Descrição (ex: Aluguel Filial 1)" value={newCFDesc} onChange={e => setNewCFDesc(e.target.value)}
+                  className="bg-background/30 border-border/50 h-8 text-xs col-span-2" />
+                <select value={newCFCategoria} onChange={e => setNewCFCategoria(e.target.value)}
+                  className="bg-background/30 border border-border/50 rounded-md h-8 text-xs text-foreground px-2">
+                  {cfCategorias.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <Input type="number" placeholder="Valor (R$)" value={newCFValor} onChange={e => setNewCFValor(e.target.value)}
+                  className="bg-background/30 border-border/50 h-8 text-xs" />
+                <select value={newCFFilial} onChange={e => setNewCFFilial(e.target.value)}
+                  className="bg-background/30 border border-border/50 rounded-md h-8 text-xs text-foreground px-2">
+                  <option value="">Todas as filiais</option>
+                  {filiais.map(f => <option key={f.id} value={f.id}>{f.nome}</option>)}
+                </select>
+                <Input type="number" placeholder="Dia do mês" value={newCFDia} onChange={e => setNewCFDia(e.target.value)}
+                  className="bg-background/30 border-border/50 h-8 text-xs" />
+              </div>
+              <Button onClick={() => addCustoFixo.mutate()} disabled={addCustoFixo.isPending} size="sm" className="w-full h-8 bg-primary text-primary-foreground gap-1 text-xs">
+                <Plus className="h-3 w-3" /> Adicionar Custo Fixo
+              </Button>
+            </div>
+          </div>
+        </SectionCard>
+      )}
+
       <Button onClick={handleLogout} disabled={loggingOut} variant="outline" className="w-full h-11 border-red-500/30 text-red-400 hover:bg-red-500/10 gap-2">
         {loggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
         Sair da Conta
