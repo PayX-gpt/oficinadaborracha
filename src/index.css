@@ -78,6 +78,16 @@
   }
 }
 
+@layer utilities {
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
 @layer components {
   .glass-card {
     background: hsl(var(--glass-bg) / var(--glass-opacity));
