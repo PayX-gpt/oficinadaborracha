@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req) => {
@@ -14,7 +14,6 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    // Fetch financial context from DB
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, supabaseKey);
@@ -37,7 +36,6 @@ serve(async (req) => {
     const socios = sociosRes.data || [];
     const filiais = filiaisRes.data || [];
 
-    // Build summary
     const totalReceita = lancamentos.reduce((s, l) => s + Number(l.valor_bruto), 0);
     const totalCusto = lancamentos.reduce((s, l) => s + Number(l.custo_total), 0);
     const totalDespesas = despesas.reduce((s, d) => s + Number(d.valor), 0);
@@ -47,17 +45,14 @@ serve(async (req) => {
     const lucroLiquido = totalReceita - totalCusto - totalDespesas - totalTaxas - totalDesconto;
     const totalServicos = lancamentos.length;
 
-    // Today's data
     const lancHoje = lancamentos.filter(l => l.created_at >= today);
     const receitaHoje = lancHoje.reduce((s, l) => s + Number(l.valor_bruto), 0);
     const servicosHoje = lancHoje.length;
 
-    // Category breakdown
     const catMap = new Map<string, number>();
     despesas.forEach(d => catMap.set(d.categoria, (catMap.get(d.categoria) || 0) + Number(d.valor)));
     const despCategories = Array.from(catMap.entries()).map(([c, v]) => `${c}: R$${v.toFixed(2)}`).join(", ");
 
-    // Payment methods
     const pmMap = new Map<string, { qty: number; total: number }>();
     lancamentos.forEach(l => {
       const m = l.metodo_pagamento || "Outro";
@@ -108,20 +103,19 @@ ${context}`
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages,
+        stream: true,
       }),
     });
 
     if (!response.ok) {
       const status = response.status;
       if (status === 429) return new Response(JSON.stringify({ error: "Limite de requisições. Tente novamente em alguns segundos." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (status === 402) return new Response(JSON.stringify({ error: "Créditos insuficientes." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       return new Response(JSON.stringify({ error: "Erro ao processar sua pergunta." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content || "Desculpe, não consegui processar sua pergunta.";
-
-    return new Response(JSON.stringify({ reply }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return new Response(response.body, {
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
     console.error("ai-chat error:", e);
