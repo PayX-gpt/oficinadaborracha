@@ -1,15 +1,12 @@
 import { motion } from "framer-motion";
-import { DollarSign, TrendingUp, Wallet, ArrowDownCircle, Receipt, Clock, ArrowUp, ArrowDown } from "lucide-react";
+import { DollarSign, TrendingUp, Wallet, ArrowDownCircle, Receipt, Clock } from "lucide-react";
 import AnimatedCounter from "./AnimatedCounter";
-import SparklineChart from "./SparklineChart";
-import { useDashboardData } from "@/hooks/useDashboardData";
+import type { DashboardData } from "@/hooks/useDashboardData";
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
 const item = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { duration: 0.4 } } };
 
-const KPICards = () => {
-  const { data } = useDashboardData("Hoje");
-
+const KPICards = ({ data }: { data?: DashboardData }) => {
   const kpis = [
     { label: "RECEITA BRUTA", icon: DollarSign, color: "text-primary", value: data?.totalReceita ?? 0, prefix: "R$ ", sub: `${data?.totalServicos ?? 0} serviços` },
     { label: "LUCRO BRUTO", icon: TrendingUp, color: "text-emerald-500", value: data?.lucroBruto ?? 0, prefix: "R$ ", sub: data?.totalReceita ? `Margem: ${((data.lucroBruto / data.totalReceita) * 100).toFixed(1)}%` : "Margem: —" },
@@ -24,7 +21,6 @@ const KPICards = () => {
       {kpis.map((kpi) => {
         const isPositive = kpi.value >= 0;
         const glowColor = kpi.glow ? (isPositive ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)") : undefined;
-
         return (
           <motion.div key={kpi.label} variants={item}
             className="group relative rounded-2xl p-4 space-y-2 transition-all duration-300"

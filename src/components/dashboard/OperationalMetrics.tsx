@@ -1,8 +1,16 @@
 import DonutCard from "./DonutCard";
-import { mockOperational, formatCurrency } from "@/lib/mockDashboardData";
+import type { DashboardData } from "@/hooks/useDashboardData";
 
-const OperationalMetrics = () => {
-  const m = mockOperational;
+const formatCurrency = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+
+const OperationalMetrics = ({ data }: { data?: DashboardData }) => {
+  const m = data?.operational ?? {
+    margemFabricadas: { percent: 0, receita: 0, custo: 0, pecas: 0 },
+    margemCompradas: { percent: 0, receita: 0, custo: 0, pecas: 0 },
+    taxaDesconto: { percent: 0, total: 0, count: 0, media: 0 },
+    impactoTaxas: { percent: 0, total: 0, credito: 0, debito: 0 },
+  };
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
       <DonutCard index={0} title="Margem Peças Fabricadas" percent={m.margemFabricadas.percent} details={[
