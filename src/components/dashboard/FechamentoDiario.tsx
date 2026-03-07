@@ -148,10 +148,10 @@ const FechamentoDiario = ({ filialId, filialNome }: Props) => {
       <AnimatePresence>
         {open && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4 pb-20 md:pb-4"
             onClick={() => !fechar.isPending && setOpen(false)}>
             <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
-              className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl p-5 space-y-4"
+              className="w-full max-w-lg max-h-[75vh] md:max-h-[85vh] overflow-y-auto rounded-2xl p-4 md:p-5 space-y-3 md:space-y-4"
               style={{ background: "rgba(14,20,35,0.95)", border: "1px solid rgba(245,158,11,0.15)" }}
               onClick={e => e.stopPropagation()}>
 
