@@ -1,35 +1,49 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Loader2, LogIn, UserPlus, MailCheck } from "lucide-react";
+import odbLogo from "@/assets/odb-logo.png";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nome, setNome] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [isSignup, setIsSignup] = useState(false);
   const [signupDone, setSignupDone] = useState(false);
 
+  // If already logged in, redirect to dashboard
+  useEffect(() => {
+    if (!loading && user) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [user, loading, navigate]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) { toast.error("Erro ao entrar: " + error.message); }
-    else { toast.success("Login realizado!"); navigate("/dashboard"); }
-    setLoading(false);
+    if (error) {
+      toast.error("Erro ao entrar: " + error.message);
+      setSubmitting(false);
+    } else {
+      toast.success("Login realizado!");
+      navigate("/dashboard");
+    }
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nome.trim()) { toast.error("Informe seu nome."); return; }
-    setLoading(true);
+    setSubmitting(true);
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -37,8 +51,17 @@ const Login = () => {
     });
     if (error) { toast.error("Erro ao cadastrar: " + error.message); }
     else { setSignupDone(true); }
-    setLoading(false);
+    setSubmitting(false);
   };
+
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center" style={{ background: "#070B14" }}>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (signupDone) {
     return (
@@ -68,8 +91,8 @@ const Login = () => {
     <div className="flex min-h-screen items-center justify-center p-4" style={{ background: "#070B14" }}>
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary" style={{ boxShadow: "0 0 30px rgba(245,158,11,0.3)" }}>
-            <span className="text-xl font-extrabold text-primary-foreground">OB</span>
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl overflow-hidden" style={{ boxShadow: "0 0 30px rgba(245,158,11,0.3)" }}>
+            <img src={odbLogo} alt="ODB" className="h-16 w-16 object-contain" />
           </div>
           <h1 className="text-xl font-bold text-foreground">Oficina da Borracha</h1>
           <p className="mt-1 text-xs text-muted-foreground">Sistema de Gestão Financeira</p>
@@ -94,8 +117,8 @@ const Login = () => {
             <Label htmlFor="password" className="text-xs text-muted-foreground">Senha</Label>
             <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className="bg-background/30 border-border/50 h-10 text-sm" />
           </div>
-          <Button type="submit" disabled={loading} className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-sm gap-2" style={{ boxShadow: "0 0 20px rgba(245,158,11,0.25)" }}>
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : isSignup ? <><UserPlus className="h-4 w-4" /> Criar Conta</> : <><LogIn className="h-4 w-4" /> Entrar</>}
+          <Button type="submit" disabled={submitting} className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-sm gap-2" style={{ boxShadow: "0 0 20px rgba(245,158,11,0.25)" }}>
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : isSignup ? <><UserPlus className="h-4 w-4" /> Criar Conta</> : <><LogIn className="h-4 w-4" /> Entrar</>}
           </Button>
           <button type="button" onClick={() => setIsSignup(!isSignup)} className="w-full text-center text-xs text-muted-foreground hover:text-primary transition-colors">
             {isSignup ? "Já tem conta? Entrar" : "Não tem conta? Cadastre-se"}
