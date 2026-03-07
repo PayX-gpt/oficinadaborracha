@@ -614,7 +614,7 @@ const ODBPage = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8.5rem)] md:h-[calc(100vh-5rem)] -mx-3 md:-mx-4 -mt-3 md:-mt-4 overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-8.5rem)] md:h-[calc(100vh-5.5rem)] -mx-3 md:-mx-4 -mt-3 md:-mt-4 overflow-hidden">
       {/* Compact header */}
       <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border/20 shrink-0 bg-background/80 backdrop-blur-xl z-10">
         <motion.div
