@@ -12,18 +12,18 @@ const OperationalMetrics = ({ data }: { data?: DashboardData }) => {
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
       <DonutCard index={0} title="Margem Peças Fabricadas" percent={m.margemFabricadas.percent} details={[
         `${formatCurrency(m.margemFabricadas.receita)} receita`,
-        `${formatCurrency(m.margemFabricadas.custo)} custo | ${m.margemFabricadas.pecas} peças`,
+        `${formatCurrency(m.margemFabricadas.custo)} custo | ${m.margemFabricadas.pecas} pç`,
       ]} />
       <DonutCard index={1} title="Margem Peças Compradas" percent={m.margemCompradas.percent} details={[
         `${formatCurrency(m.margemCompradas.receita)} receita`,
-        `${formatCurrency(m.margemCompradas.custo)} custo | ${m.margemCompradas.pecas} peças`,
+        `${formatCurrency(m.margemCompradas.custo)} custo | ${m.margemCompradas.pecas} pç`,
       ]} />
       <DonutCard index={2} title="Taxa de Desconto" percent={m.taxaDesconto.percent} details={[
         `${formatCurrency(m.taxaDesconto.total)} em descontos`,
-        `${m.taxaDesconto.count} serviços | Média: ${formatCurrency(m.taxaDesconto.media)}`,
+        `${m.taxaDesconto.count} serv. | Méd: ${formatCurrency(m.taxaDesconto.media)}`,
       ]} color="#F59E0B" />
       <DonutCard index={3} title="Impacto Taxas Máquina" percent={m.impactoTaxas.percent} details={[
         `${formatCurrency(m.impactoTaxas.total)} em taxas`,

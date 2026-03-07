@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Factory } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, ComposedChart } from "recharts";
+import { Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, ComposedChart } from "recharts";
 import type { DashboardData } from "@/hooks/useDashboardData";
 
 const formatCurrency = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
@@ -9,25 +9,25 @@ const ManufacturingAnalysis = ({ data }: { data?: DashboardData }) => {
   const m = data?.manufacturing ?? { receita: 0, custoMP: 0, margem: 0, pecas: 0, custoMedioPeca: 0, precoMedioCobrado: 0, roi: 0, timeline: [] };
 
   const kpis = [
-    { label: "Receita Fabricação", value: formatCurrency(m.receita), color: "text-emerald-500" },
-    { label: "Custo Matéria-Prima", value: formatCurrency(m.custoMP), color: "text-red-400" },
-    { label: "Margem Fabricação", value: `${m.margem}%`, color: "text-primary" },
-    { label: "Peças Fabricadas", value: `${m.pecas} un`, color: "text-foreground" },
-    { label: "Custo Médio/Peça", value: formatCurrency(m.custoMedioPeca), color: "text-muted-foreground" },
-    { label: "Preço Médio Cobrado", value: formatCurrency(m.precoMedioCobrado), color: "text-foreground" },
-    { label: "ROI Fabricação", value: `${m.roi}x`, color: "text-primary" },
+    { label: "Receita Fab.", value: formatCurrency(m.receita), color: "text-emerald-500" },
+    { label: "Custo MP", value: formatCurrency(m.custoMP), color: "text-red-400" },
+    { label: "Margem Fab.", value: `${m.margem}%`, color: "text-primary" },
+    { label: "Peças Fab.", value: `${m.pecas} un`, color: "text-foreground" },
+    { label: "Custo Méd/Pç", value: formatCurrency(m.custoMedioPeca), color: "text-muted-foreground" },
+    { label: "Preço Méd.", value: formatCurrency(m.precoMedioCobrado), color: "text-foreground" },
+    { label: "ROI Fab.", value: `${m.roi}x`, color: "text-primary" },
   ];
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9, duration: 0.4 }}
-      className="rounded-2xl p-4 md:p-6 transition-all duration-300"
+      className="rounded-xl p-3 md:p-6 transition-all duration-300 overflow-hidden"
       style={{ background: "rgba(14,20,35,0.85)", backdropFilter: "blur(16px)", border: "1px solid rgba(245,158,11,0.15)", boxShadow: "0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03)" }}>
-      <h3 className="text-[11px] uppercase tracking-[0.05em] text-muted-foreground font-medium mb-4 flex items-center gap-2">
+      <h3 className="text-[11px] uppercase tracking-[0.05em] text-muted-foreground font-medium mb-3 flex items-center gap-2">
         <Factory className="h-4 w-4 text-primary" />
-        Análise de Fabricação de Borrachas
+        Análise de Fabricação
       </h3>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ResponsiveContainer width="100%" height={220}>
+      <div className="space-y-4">
+        <ResponsiveContainer width="100%" height={180}>
           <ComposedChart data={m.timeline}>
             <defs>
               <linearGradient id="mfgGrad" x1="0" y1="0" x2="0" y2="1">
@@ -36,8 +36,8 @@ const ManufacturingAnalysis = ({ data }: { data?: DashboardData }) => {
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-            <XAxis dataKey="day" tick={{ fill: "#64748B", fontSize: 11 }} />
-            <YAxis tick={{ fill: "#64748B", fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+            <XAxis dataKey="day" tick={{ fill: "#64748B", fontSize: 10 }} />
+            <YAxis tick={{ fill: "#64748B", fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} width={35} />
             <Tooltip content={({ active, payload, label }) => {
               if (!active || !payload?.length) return null;
               return (
@@ -52,11 +52,11 @@ const ManufacturingAnalysis = ({ data }: { data?: DashboardData }) => {
             <Line type="monotone" dataKey="custo" stroke="#EF4444" strokeWidth={2} dot={false} name="Custo MP" />
           </ComposedChart>
         </ResponsiveContainer>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {kpis.map((k) => (
-            <div key={k.label} className="rounded-lg p-3 bg-secondary/20 space-y-1">
-              <p className="text-[11px] text-muted-foreground">{k.label}</p>
-              <p className={`text-sm font-bold ${k.color}`}>{k.value}</p>
+            <div key={k.label} className="rounded-lg p-2.5 bg-secondary/20 space-y-0.5">
+              <p className="text-[10px] text-muted-foreground truncate">{k.label}</p>
+              <p className={`text-xs font-bold ${k.color}`}>{k.value}</p>
             </div>
           ))}
         </div>

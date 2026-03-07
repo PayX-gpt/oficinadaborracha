@@ -10,17 +10,17 @@ const PaymentMethods = ({ data }: { data?: DashboardData }) => {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7, duration: 0.4 }}
-      className="rounded-xl md:rounded-2xl p-3 md:p-6 transition-all duration-300"
+      className="rounded-xl p-3 md:p-6 transition-all duration-300 overflow-hidden"
       style={{ background: "rgba(14,20,35,0.85)", backdropFilter: "blur(16px)", border: "1px solid rgba(245,158,11,0.08)", boxShadow: "0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03)" }}>
-      <h3 className="text-[11px] uppercase tracking-[0.05em] text-muted-foreground font-medium mb-4">Receita por Método de Pagamento</h3>
+      <h3 className="text-[11px] uppercase tracking-[0.05em] text-muted-foreground font-medium mb-3">Receita por Método de Pagamento</h3>
       {methods.length === 0 ? (
         <p className="text-xs text-muted-foreground text-center py-8">Nenhum dado no período</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-4">
           <div className="relative">
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={180}>
               <PieChart>
-                <Pie data={methods} cx="50%" cy="50%" innerRadius={60} outerRadius={90} dataKey="bruto" stroke="none">
+                <Pie data={methods} cx="50%" cy="50%" innerRadius={50} outerRadius={75} dataKey="bruto" stroke="none">
                   {methods.map((m) => <Cell key={m.method} fill={m.color} />)}
                 </Pie>
                 <Tooltip content={({ active, payload }) => {
@@ -37,36 +37,22 @@ const PaymentMethods = ({ data }: { data?: DashboardData }) => {
             </ResponsiveContainer>
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="text-center">
-                <p className="text-lg font-bold text-foreground">{formatCurrency(total)}</p>
-                <p className="text-[11px] text-muted-foreground">Total</p>
+                <p className="text-sm font-bold text-foreground">{formatCurrency(total)}</p>
+                <p className="text-[10px] text-muted-foreground">Total</p>
               </div>
             </div>
           </div>
-          <div className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0">
-            <table className="w-full text-[10px] md:text-xs min-w-[320px]">
-              <thead>
-                <tr className="text-muted-foreground border-b border-border/50">
-                  <th className="text-left py-2 font-medium">Método</th>
-                  <th className="text-right py-2 font-medium">Qtd</th>
-                  <th className="text-right py-2 font-medium">Bruto</th>
-                  <th className="text-right py-2 font-medium hidden sm:table-cell">Taxas</th>
-                  <th className="text-right py-2 font-medium">Líquido</th>
-                  <th className="text-right py-2 font-medium">%</th>
-                </tr>
-              </thead>
-              <tbody>
-                {methods.map((m) => (
-                  <tr key={m.method} className="border-b border-border/30">
-                    <td className="py-2"><div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: m.color }} /><span className="text-foreground">{m.method}</span></div></td>
-                    <td className="py-2 text-right text-foreground">{m.qty}</td>
-                    <td className="py-2 text-right text-foreground">{formatCurrency(m.bruto)}</td>
-                    <td className="py-2 text-right text-red-400 hidden sm:table-cell">{formatCurrency(m.taxas)}</td>
-                    <td className="py-2 text-right text-emerald-500">{formatCurrency(m.liquido)}</td>
-                    <td className="py-2 text-right text-foreground">{m.percent}%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {/* Mobile-friendly list instead of table */}
+          <div className="space-y-1.5">
+            {methods.map((m) => (
+              <div key={m.method} className="flex items-center gap-2 py-1.5 px-2 rounded-lg bg-secondary/20 text-[11px]">
+                <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: m.color }} />
+                <span className="text-foreground flex-1 min-w-0 truncate">{m.method}</span>
+                <span className="text-muted-foreground shrink-0">{m.qty}x</span>
+                <span className="text-foreground font-medium shrink-0">{formatCurrency(m.bruto)}</span>
+                <span className="text-muted-foreground shrink-0">{m.percent}%</span>
+              </div>
+            ))}
           </div>
         </div>
       )}
