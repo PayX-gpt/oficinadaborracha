@@ -22,6 +22,8 @@ REGRAS:
 3. CORRIJA erros: buxa→bucha, corola→Corolla, cx direcao→caixa de direção, amort→amortecedor, din→dinheiro
 4. Se não identificar algo com certeza, marque confiança como 'media' ou 'baixa'
 5. Retorne APENAS JSON válido (sem markdown, sem crases)
+6. Para peças compradas, ESTIME o custo se souber (o valor_cobrado é o preço ao cliente, custo_estimado é quanto a oficina pagou)
+7. Use o BANCO DE CONHECIMENTO abaixo para estimar custos com base no histórico de preços
 
 FORMATO DE RETORNO:
 {
@@ -45,19 +47,26 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { tipo, conteudo, imageBase64, mimeType } = await req.json();
+    const { tipo, conteudo, imageBase64, mimeType, salvar_aprendizado, itens_confirmados, veiculo_info } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    // Fetch context from DB
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get synonyms and knowledge base in parallel
+    // ── LEARNING MODE: Save confirmed items to knowledge base ──
+    if (salvar_aprendizado && itens_confirmados) {
+      await saveLearnedCosts(supabase, itens_confirmados, veiculo_info);
+      return new Response(JSON.stringify({ success: true, message: "Aprendizado salvo" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── ANALYSIS MODE: Process input with AI ──
     const [sinonimoRes, conhecimentoRes, clientesRes] = await Promise.all([
       supabase.from("odb_sinonimos").select("termo_digitado, termo_correto").limit(200),
-      supabase.from("odb_conhecimento_pecas").select("descricao_normalizada, veiculo_marca, veiculo_modelo, tipo, valor_medio, total_lancamentos").order("total_lancamentos", { ascending: false }).limit(100),
+      supabase.from("odb_conhecimento_pecas").select("descricao_normalizada, veiculo_marca, veiculo_modelo, tipo, valor_medio, custo_medio, margem_media, total_lancamentos").order("total_lancamentos", { ascending: false }).limit(100),
       supabase.from("clientes").select("id, nome, telefone").order("created_at", { ascending: false }).limit(50),
     ]);
 
@@ -69,13 +78,16 @@ serve(async (req) => {
 SINÔNIMOS CONHECIDOS:
 ${sinonimos.map(s => `${s.termo_digitado} → ${s.termo_correto}`).join(", ")}
 
-BANCO DE CONHECIMENTO (peças que já conheço):
-${conhecimento.map(k => `${k.descricao_normalizada} (${k.veiculo_marca} ${k.veiculo_modelo}) = ${k.tipo}, média R$ ${k.valor_medio}, ${k.total_lancamentos}x`).join("\n")}
+BANCO DE CONHECIMENTO (peças com histórico de preços — USE para estimar custos):
+${conhecimento.length > 0 
+  ? conhecimento.map(k => 
+      `• ${k.descricao_normalizada} (${k.veiculo_marca || "qualquer"} ${k.veiculo_modelo || ""}) = ${k.tipo}, preço médio R$ ${k.valor_medio}, custo médio R$ ${k.custo_medio || "?"}, margem ${k.margem_media || "?"}%, ${k.total_lancamentos}x usado`
+    ).join("\n")
+  : "Nenhum dado histórico ainda. Não estime custos sem base."}
 
 CLIENTES RECENTES:
 ${clientes.map(c => `${c.nome} (${c.telefone || "sem tel"})`).join(", ")}`;
 
-    // Build messages based on input type
     const messages: any[] = [
       { role: "system", content: SYSTEM_PROMPT + "\n\n" + contextPrompt },
     ];
@@ -148,3 +160,69 @@ ${clientes.map(c => `${c.nome} (${c.telefone || "sem tel"})`).join(", ")}`;
     });
   }
 });
+
+// ── LEARNING FUNCTION ──
+// Saves confirmed item costs to odb_conhecimento_pecas so the AI can reference them in future analyses
+async function saveLearnedCosts(
+  supabase: any,
+  itens: Array<{ descricao: string; tipo: string; valor_cobrado: number; custo: number }>,
+  veiculo?: { marca?: string; modelo?: string }
+) {
+  for (const item of itens) {
+    if (!item.descricao || item.valor_cobrado <= 0) continue;
+
+    const descNorm = item.descricao.toLowerCase().trim();
+    const marca = veiculo?.marca?.toLowerCase().trim() || null;
+    const modelo = veiculo?.modelo?.toLowerCase().trim() || null;
+    const margem = item.custo > 0 ? ((item.valor_cobrado - item.custo) / item.custo) * 100 : null;
+
+    // Check if this part+vehicle combo already exists
+    let query = supabase
+      .from("odb_conhecimento_pecas")
+      .select("*")
+      .eq("descricao_normalizada", descNorm);
+
+    if (marca) query = query.eq("veiculo_marca", marca);
+    else query = query.is("veiculo_marca", null);
+    if (modelo) query = query.eq("veiculo_modelo", modelo);
+    else query = query.is("veiculo_modelo", null);
+
+    const { data: existing } = await query.maybeSingle();
+
+    if (existing) {
+      // Update running averages
+      const count = (existing.total_lancamentos || 0) + 1;
+      const newValorMedio = ((existing.valor_medio || 0) * (count - 1) + item.valor_cobrado) / count;
+      const newCustoMedio = item.custo > 0
+        ? ((existing.custo_medio || 0) * (count - 1) + item.custo) / count
+        : existing.custo_medio;
+      const newMargemMedia = margem !== null
+        ? ((existing.margem_media || 0) * (count - 1) + margem) / count
+        : existing.margem_media;
+
+      await supabase.from("odb_conhecimento_pecas").update({
+        valor_medio: Math.round(newValorMedio * 100) / 100,
+        custo_medio: newCustoMedio ? Math.round(newCustoMedio * 100) / 100 : null,
+        margem_media: newMargemMedia ? Math.round(newMargemMedia * 100) / 100 : null,
+        valor_minimo: Math.min(existing.valor_minimo || item.valor_cobrado, item.valor_cobrado),
+        valor_maximo: Math.max(existing.valor_maximo || item.valor_cobrado, item.valor_cobrado),
+        total_lancamentos: count,
+        updated_at: new Date().toISOString(),
+      }).eq("id", existing.id);
+    } else {
+      // Insert new knowledge
+      await supabase.from("odb_conhecimento_pecas").insert({
+        descricao_normalizada: descNorm,
+        tipo: item.tipo || null,
+        veiculo_marca: marca,
+        veiculo_modelo: modelo,
+        valor_medio: item.valor_cobrado,
+        custo_medio: item.custo > 0 ? item.custo : null,
+        margem_media: margem,
+        valor_minimo: item.valor_cobrado,
+        valor_maximo: item.valor_cobrado,
+        total_lancamentos: 1,
+      });
+    }
+  }
+}
