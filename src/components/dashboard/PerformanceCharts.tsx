@@ -6,12 +6,12 @@ import type { DashboardData } from "@/hooks/useDashboardData";
 
 const formatCurrency = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 const tabs = ["Receita", "Lucro", "Despesas", "Filiais"];
-const BRANCH_COLORS = ["#F59E0B", "#10B981", "#3B82F6", "#8B5CF6", "#EC4899", "#06B6D4"];
+const BRANCH_COLORS = ["#D20A0A", "#C9A84C", "#BEBEBE", "#33A833", "#999999", "#666666"];
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg px-3 py-2 text-xs border shadow-xl" style={{ background: "rgba(14,20,35,0.95)", borderColor: "rgba(245,158,11,0.3)" }}>
+    <div className="rounded-lg px-3 py-2 text-xs border border-border bg-card shadow-xl">
       <p className="text-foreground font-medium mb-1">{label}</p>
       {payload.map((p: any, i: number) => (
         <p key={i} style={{ color: p.color }}>{p.name}: {formatCurrency(p.value)}</p>
@@ -36,8 +36,7 @@ const PerformanceCharts = ({ data }: { data?: DashboardData }) => {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6, duration: 0.4 }}
-      className="rounded-xl p-3 md:p-6 transition-all duration-300 overflow-hidden"
-      style={{ background: "rgba(14,20,35,0.85)", backdropFilter: "blur(16px)", border: "1px solid rgba(245,158,11,0.08)", boxShadow: "0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03)" }}>
+      className="rounded-xl p-3 md:p-6 transition-all duration-300 overflow-hidden bg-card border border-border">
       <div className="flex gap-1 mb-4 p-1 rounded-lg bg-secondary/30 overflow-x-auto scrollbar-none">
         {tabs.map((t) => (
           <button key={t} onClick={() => setActiveTab(t)}
@@ -55,20 +54,20 @@ const PerformanceCharts = ({ data }: { data?: DashboardData }) => {
               <ResponsiveContainer width="100%" height={200}>
                 <ComposedChart data={revenueByDay}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="day" tick={{ fill: "#64748B", fontSize: 10 }} />
-                  <YAxis tick={{ fill: "#64748B", fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} width={35} />
+                  <XAxis dataKey="day" tick={{ fill: "#666", fontSize: 10 }} />
+                  <YAxis tick={{ fill: "#666", fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} width={35} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="maoDeObra" stackId="a" fill="#F59E0B" name="Mão de Obra" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="fabricadas" stackId="a" fill="#10B981" name="Fabricadas" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="compradas" stackId="a" fill="#3B82F6" name="Compradas" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="maoDeObra" stackId="a" fill="#D20A0A" name="Mão de Obra" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="fabricadas" stackId="a" fill="#C9A84C" name="Fabricadas" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="compradas" stackId="a" fill="#BEBEBE" name="Compradas" radius={[4, 4, 0, 0]} />
                   <Line type="monotone" dataKey="total" stroke="rgba(255,255,255,0.8)" strokeWidth={2} dot={false} name="Total" />
                 </ComposedChart>
               </ResponsiveContainer>
               <div className="grid grid-cols-3 gap-1.5">
                 {[
                   { label: "Mão de Obra", value: totalMO, pct: Math.round((totalMO / totalAll) * 100), color: "bg-primary" },
-                  { label: "Fabricadas", value: totalFab, pct: Math.round((totalFab / totalAll) * 100), color: "bg-emerald-500" },
-                  { label: "Compradas", value: totalComp, pct: Math.round((totalComp / totalAll) * 100), color: "bg-blue-500" },
+                  { label: "Fabricadas", value: totalFab, pct: Math.round((totalFab / totalAll) * 100), color: "bg-gold" },
+                  { label: "Compradas", value: totalComp, pct: Math.round((totalComp / totalAll) * 100), color: "bg-chrome" },
                 ].map((m) => (
                   <div key={m.label} className="rounded-lg p-2 bg-secondary/30 text-center">
                     <div className={`h-1 w-5 rounded-full ${m.color} mx-auto mb-1.5`} />
@@ -86,16 +85,16 @@ const PerformanceCharts = ({ data }: { data?: DashboardData }) => {
               <AreaChart data={profitByDay}>
                 <defs>
                   <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10B981" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#C9A84C" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#C9A84C" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="day" tick={{ fill: "#64748B", fontSize: 10 }} />
-                <YAxis tick={{ fill: "#64748B", fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} width={35} />
+                <XAxis dataKey="day" tick={{ fill: "#666", fontSize: 10 }} />
+                <YAxis tick={{ fill: "#666", fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} width={35} />
                 <Tooltip content={<CustomTooltip />} />
-                <Area type="monotone" dataKey="lucroBruto" stroke="#86EFAC" fill="url(#profitGrad)" strokeWidth={2} name="Lucro Bruto" />
-                <Area type="monotone" dataKey="lucroLiquido" stroke="#10B981" fill="transparent" strokeWidth={2} name="Lucro Líquido" />
+                <Area type="monotone" dataKey="lucroBruto" stroke="#C9A84C" fill="url(#profitGrad)" strokeWidth={2} name="Lucro Bruto" />
+                <Area type="monotone" dataKey="lucroLiquido" stroke="#D20A0A" fill="transparent" strokeWidth={2} name="Lucro Líquido" />
               </AreaChart>
             </ResponsiveContainer>
           )}
@@ -127,8 +126,8 @@ const PerformanceCharts = ({ data }: { data?: DashboardData }) => {
                   <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={branchComparison}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                      <XAxis dataKey="filial" tick={{ fill: "#64748B", fontSize: 10 }} />
-                      <YAxis tick={{ fill: "#64748B", fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} width={35} />
+                      <XAxis dataKey="filial" tick={{ fill: "#666", fontSize: 10 }} />
+                      <YAxis tick={{ fill: "#666", fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} width={35} />
                       <Tooltip content={<CustomTooltip />} />
                       <Bar dataKey="receita" name="Receita" radius={[4, 4, 0, 0]}>
                         {branchComparison.map((_, i) => <Cell key={i} fill={BRANCH_COLORS[i % BRANCH_COLORS.length]} />)}

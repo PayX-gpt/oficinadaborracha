@@ -24,19 +24,11 @@ const ProfitSplit = ({ data }: { data?: DashboardData }) => {
       const socios = sociosRes.data || [];
       const retiradas = retiradasRes.data || [];
       const filiais = filRes.data || [];
-
       return socios.map((s) => {
         const totalRetiradas = retiradas.filter((r) => r.socio_id === s.id).reduce((sum, r) => sum + Number(r.valor), 0);
         const socioFiliais = filiais.filter((f) => f.socio_id === s.id).map((f: any) => f.filiais?.nome).filter(Boolean);
         const valorBruto = lucroLiquido > 0 ? (lucroLiquido * Number(s.percentual_lucro)) / 100 : 0;
-        return {
-          nome: s.nome,
-          filiais: socioFiliais.join(", ") || "—",
-          percent: Number(s.percentual_lucro),
-          valorBruto,
-          retiradas: totalRetiradas,
-          saldo: valorBruto - totalRetiradas,
-        };
+        return { nome: s.nome, filiais: socioFiliais.join(", ") || "—", percent: Number(s.percentual_lucro), valorBruto, retiradas: totalRetiradas, saldo: valorBruto - totalRetiradas };
       });
     },
   });
@@ -56,14 +48,13 @@ const ProfitSplit = ({ data }: { data?: DashboardData }) => {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75, duration: 0.4 }}
-      className="rounded-xl p-3 md:p-6 transition-all duration-300 overflow-hidden"
-      style={{ background: "rgba(14,20,35,0.85)", backdropFilter: "blur(16px)", border: "1px solid rgba(245,158,11,0.15)", boxShadow: "0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03)" }}>
+      className="rounded-xl p-3 md:p-6 transition-all duration-300 overflow-hidden bg-card border border-border"
+      style={{ borderColor: "rgba(210,10,10,0.15)" }}>
       <div className="flex items-center gap-2 mb-4">
         <Users className="h-4 w-4 text-primary" />
         <h3 className="text-[11px] uppercase tracking-[0.05em] text-muted-foreground font-medium">Distribuição de Lucros</h3>
       </div>
       <div className="space-y-4">
-        {/* Waterfall */}
         <div className="space-y-1">
           {waterfall.map((w, i) => (
             <motion.div key={w.label} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.8 + i * 0.05 }}
@@ -71,13 +62,12 @@ const ProfitSplit = ({ data }: { data?: DashboardData }) => {
               <span className={`${w.type === "total" || w.type === "result" ? "text-foreground font-bold" : "text-muted-foreground"} truncate`}>
                 {w.type === "negative" ? "→ " : ""}{w.label}
               </span>
-              <span className={`font-medium shrink-0 ml-2 ${w.type === "negative" ? "text-red-400" : w.type === "result" ? "text-primary font-bold" : "text-emerald-500"}`}>
+              <span className={`font-medium shrink-0 ml-2 ${w.type === "negative" ? "text-primary" : w.type === "result" ? "text-gold font-bold" : "text-success"}`}>
                 {w.value >= 0 ? formatCurrency(w.value) : `-${formatCurrency(Math.abs(w.value))}`}
               </span>
             </motion.div>
           ))}
         </div>
-        {/* Sócios */}
         <div className="space-y-2">
           {socios.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-3">Cadastre sócios nas configurações</p>
@@ -91,12 +81,12 @@ const ProfitSplit = ({ data }: { data?: DashboardData }) => {
                     <p className="text-[10px] text-muted-foreground truncate">{s.filiais} • {s.percent}%</p>
                   </div>
                 </div>
-                <p className="text-xs font-bold text-primary shrink-0">{formatCurrency(s.valorBruto)}</p>
+                <p className="text-xs font-bold text-gold shrink-0">{formatCurrency(s.valorBruto)}</p>
               </div>
               <div className="space-y-0.5">
                 <div className="flex justify-between text-[10px]">
                   <span className="text-muted-foreground">Retirado: {formatCurrency(s.retiradas)}</span>
-                  <span className="text-emerald-500">Saldo: {formatCurrency(s.saldo)}</span>
+                  <span className="text-success">Saldo: {formatCurrency(s.saldo)}</span>
                 </div>
                 <div className="h-1 rounded-full bg-secondary/50 overflow-hidden">
                   <div className="h-full rounded-full bg-primary" style={{ width: `${s.valorBruto > 0 ? Math.min(100, (s.retiradas / s.valorBruto) * 100) : 0}%` }} />
