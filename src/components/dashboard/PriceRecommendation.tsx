@@ -73,20 +73,20 @@ const PriceRecommendation = () => {
       {result && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
           {/* Price range */}
-          <div className="rounded-xl p-3 bg-emerald-500/10 border border-emerald-500/20">
+          <div className="rounded-xl p-3 bg-success/10 border border-success/20">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[10px] uppercase text-muted-foreground font-medium">Preço Sugerido</span>
-              <span className="text-lg font-bold text-emerald-400">{formatCurrency(result.precoSugerido)}</span>
+              <span className="text-lg font-bold text-gold">{formatCurrency(result.precoSugerido)}</span>
             </div>
             <div className="flex justify-between text-[10px] text-muted-foreground">
               <span>Mín: {formatCurrency(result.precoMinimo)}</span>
               <span>Máx: {formatCurrency(result.precoMaximo)}</span>
             </div>
             <div className="mt-2 h-2 rounded-full bg-secondary/30 overflow-hidden">
-              <div className="h-full rounded-full bg-gradient-to-r from-red-500 via-emerald-500 to-primary"
+              <div className="h-full rounded-full bg-gradient-to-r from-primary via-gold to-success"
                 style={{ width: `${Math.min(100, result.margemEstimada)}%` }} />
             </div>
-            <p className="text-[10px] text-emerald-400 mt-1">Margem estimada: {result.margemEstimada}%</p>
+            <p className="text-[10px] text-gold mt-1">Margem estimada: {result.margemEstimada}%</p>
           </div>
 
           {/* Justification */}
