@@ -6,11 +6,11 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 import { toast } from "sonner";
 
 const typeConfig: Record<string, { icon: any; label: string; border: string; bg: string }> = {
-  alert: { icon: AlertTriangle, label: "ALERTA", border: "border-red-500/30", bg: "bg-red-500/10" },
-  opportunity: { icon: TrendingUp, label: "OPORTUNIDADE", border: "border-emerald-500/30", bg: "bg-emerald-500/10" },
-  trend: { icon: BarChart3, label: "TENDÊNCIA", border: "border-blue-500/30", bg: "bg-blue-500/10" },
-  savings: { icon: PiggyBank, label: "ECONOMIA", border: "border-primary/30", bg: "bg-primary/10" },
-  recommendation: { icon: Lightbulb, label: "DICA", border: "border-violet-500/30", bg: "bg-violet-500/10" },
+  alert: { icon: AlertTriangle, label: "ALERTA", border: "border-primary/30", bg: "bg-primary/10" },
+  opportunity: { icon: TrendingUp, label: "OPORTUNIDADE", border: "border-success/30", bg: "bg-success/10" },
+  trend: { icon: BarChart3, label: "TENDÊNCIA", border: "border-chrome/30", bg: "bg-chrome/10" },
+  savings: { icon: PiggyBank, label: "ECONOMIA", border: "border-gold/30", bg: "bg-gold/10" },
+  recommendation: { icon: Lightbulb, label: "DICA", border: "border-gold/30", bg: "bg-gold/10" },
 };
 
 interface AIInsight {
