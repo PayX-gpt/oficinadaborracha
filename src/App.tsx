@@ -23,6 +23,7 @@ import PecasPage from "./pages/PecasPage";
 import RelatoriosIA from "./pages/RelatoriosIA";
 import InstallPage from "./pages/InstallPage";
 import NotFound from "./pages/NotFound";
+import PlaybookPage from "./pages/PlaybookPage";
 
 const queryClient = new QueryClient();
 
