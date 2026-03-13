@@ -11,7 +11,7 @@ const PaymentMethods = ({ data }: { data?: DashboardData }) => {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7, duration: 0.4 }}
       className="rounded-xl p-3 md:p-6 transition-all duration-300 overflow-hidden"
-      style={{ background: "rgba(14,20,35,0.85)", backdropFilter: "blur(16px)", border: "1px solid rgba(245,158,11,0.08)", boxShadow: "0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03)" }}>
+      style={{ background: "rgba(9,9,9,0.85)", border: "1px solid rgba(210,10,10,0.08)", boxShadow: "0 4px 24px rgba(0,0,0,0.3)" }}>
       <h3 className="text-[11px] uppercase tracking-[0.05em] text-muted-foreground font-medium mb-3">Receita por Método de Pagamento</h3>
       {methods.length === 0 ? (
         <p className="text-xs text-muted-foreground text-center py-8">Nenhum dado no período</p>
