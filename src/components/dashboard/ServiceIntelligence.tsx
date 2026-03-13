@@ -36,7 +36,7 @@ const ServiceIntelligence = ({ data }: { data?: DashboardData }) => {
                 <p className="text-xs text-muted-foreground text-center py-6">Nenhum serviço no período</p>
               ) : topServices.map((s) => {
                 const MedalIcon = s.pos <= 3 ? medalIcons[s.pos - 1] : null;
-                const medalColors = ["text-amber-400", "text-slate-400", "text-amber-700"];
+                const medalColors = ["text-gold", "text-chrome", "text-muted-foreground"];
                 return (
                   <div key={s.pos} className="rounded-lg p-2.5 bg-secondary/20 space-y-1.5">
                     <div className="flex items-center gap-2">
