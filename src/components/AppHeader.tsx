@@ -8,10 +8,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 
 const typeConfig: Record<string, { icon: any; color: string; bg: string }> = {
-  alerta: { icon: AlertTriangle, color: "text-red-400", bg: "bg-red-500/10" },
-  info: { icon: Info, color: "text-blue-400", bg: "bg-blue-500/10" },
-  sucesso: { icon: CheckCircle, color: "text-emerald-400", bg: "bg-emerald-500/10" },
-  insight: { icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
+  alerta: { icon: AlertTriangle, color: "text-primary", bg: "bg-primary/10" },
+  info: { icon: Info, color: "text-chrome", bg: "bg-chrome/10" },
+  sucesso: { icon: CheckCircle, color: "text-success", bg: "bg-success/10" },
+  insight: { icon: TrendingUp, color: "text-gold", bg: "bg-gold/10" },
 };
 
 const AppHeader = () => {
@@ -63,10 +63,10 @@ const AppHeader = () => {
   const initials = (profile?.nome || "U").slice(0, 2).toUpperCase();
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 flex h-14 items-center justify-between border-b border-border/10 px-3 md:px-4 bg-background/92 backdrop-blur-xl">
+    <header className="fixed top-0 left-0 right-0 z-50 flex h-14 items-center justify-between border-b border-primary/30 px-3 md:px-4 bg-background/95 backdrop-blur-xl">
       {/* Left: Logo */}
       <div className="flex items-center gap-2">
-        <div className="h-8 w-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0" style={{ boxShadow: "0 0 12px hsl(var(--primary) / 0.2)" }}>
+        <div className="h-8 w-8 overflow-hidden flex items-center justify-center shrink-0 bg-primary flex items-center justify-center">
           <img src={odbLogo} alt="ODB" className="h-8 w-8 object-contain" />
         </div>
         <span className="text-sm font-bold text-foreground hidden md:block">Oficina da Borracha</span>
@@ -114,10 +114,10 @@ const AppHeader = () => {
 
       {/* Right: Status + Bell + Avatar */}
       <div className="flex items-center gap-1.5">
-        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-500/10">
+        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-success/10">
           <span className="relative flex h-1.5 w-1.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-success" />
           </span>
         </div>
 

@@ -62,12 +62,7 @@ const DesktopSidebar = () => {
 
   return (
     <aside
-      className="hidden md:flex fixed top-12 left-0 bottom-0 w-60 flex-col border-r p-3 z-40"
-      style={{
-        background: "rgba(7,11,20,0.92)",
-        backdropFilter: "blur(16px)",
-        borderColor: "rgba(245,158,11,0.08)",
-      }}
+      className="hidden md:flex fixed top-12 left-0 bottom-0 w-60 flex-col border-r border-border p-3 z-40 bg-background/95 backdrop-blur-xl"
     >
       <div className="flex-1 space-y-0.5 mt-3">
         {navItems.map((item) => {
