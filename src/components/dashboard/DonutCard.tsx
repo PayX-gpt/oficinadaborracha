@@ -11,9 +11,9 @@ interface DonutCardProps {
 
 function getColor(percent: number, customColor?: string) {
   if (customColor) return customColor;
-  if (percent > 60) return "#10B981";
-  if (percent > 30) return "#F59E0B";
-  return "#EF4444";
+  if (percent > 60) return "#33A833";
+  if (percent > 30) return "#C9A84C";
+  return "#D20A0A";
 }
 
 const DonutCard = ({ title, percent, details, color, index }: DonutCardProps) => {
