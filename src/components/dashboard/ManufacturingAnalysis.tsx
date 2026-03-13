@@ -10,7 +10,7 @@ const ManufacturingAnalysis = ({ data }: { data?: DashboardData }) => {
 
   const kpis = [
     { label: "Receita Fab.", value: formatCurrency(m.receita), color: "text-success" },
-    { label: "Custo MP", value: formatCurrency(m.custoMP), color: "text-red-400" },
+    { label: "Custo MP", value: formatCurrency(m.custoMP), color: "text-primary" },
     { label: "Margem Fab.", value: `${m.margem}%`, color: "text-primary" },
     { label: "Peças Fab.", value: `${m.pecas} un`, color: "text-foreground" },
     { label: "Custo Méd/Pç", value: formatCurrency(m.custoMedioPeca), color: "text-muted-foreground" },
