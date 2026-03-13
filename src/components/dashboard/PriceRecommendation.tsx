@@ -104,7 +104,7 @@ const PriceRecommendation = () => {
                     <span className="text-muted-foreground truncate mr-2">{s.descricao}</span>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-foreground font-medium">{formatCurrency(s.preco)}</span>
-                      <span className={`text-[10px] ${s.margem >= 40 ? "text-emerald-400" : "text-red-400"}`}>{s.margem}%</span>
+                      <span className={`text-[10px] ${s.margem >= 40 ? "text-success" : "text-primary"}`}>{s.margem}%</span>
                     </div>
                   </div>
                 ))}

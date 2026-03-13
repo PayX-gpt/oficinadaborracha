@@ -48,7 +48,7 @@ const ManufacturingAnalysis = ({ data }: { data?: DashboardData }) => {
                 </div>
               );
             }} />
-            <Area type="monotone" dataKey="receita" stroke="#10B981" fill="url(#mfgGrad)" strokeWidth={2} name="Receita" />
+            <Area type="monotone" dataKey="receita" stroke="#C9A84C" fill="url(#mfgGrad)" strokeWidth={2} name="Receita" />
             <Line type="monotone" dataKey="custo" stroke="#EF4444" strokeWidth={2} dot={false} name="Custo MP" />
           </ComposedChart>
         </ResponsiveContainer>

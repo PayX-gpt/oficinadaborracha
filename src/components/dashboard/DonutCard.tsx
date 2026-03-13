@@ -27,10 +27,9 @@ const DonutCard = ({ title, percent, details, color, index }: DonutCardProps) =>
       transition={{ delay: index * 0.05 + 0.3, duration: 0.4 }}
       className="rounded-xl p-3 flex items-center gap-3 transition-all duration-300 hover:border-primary/20"
       style={{
-        background: "rgba(14,20,35,0.85)",
-        backdropFilter: "blur(16px)",
-        border: "1px solid rgba(245,158,11,0.08)",
-        boxShadow: "0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03)",
+        background: "rgba(9,9,9,0.85)",
+        border: "1px solid rgba(210,10,10,0.08)",
+        boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
       }}
     >
       <div className="relative w-14 h-14 shrink-0">

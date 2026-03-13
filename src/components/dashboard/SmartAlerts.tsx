@@ -82,7 +82,7 @@ const SmartAlerts = () => {
 
       {visibleAlerts.length === 0 ? (
         <div className="text-center py-4">
-          <CheckCircle className="h-6 w-6 text-emerald-500/30 mx-auto mb-1" />
+          <CheckCircle className="h-6 w-6 text-success/30 mx-auto mb-1" />
           <p className="text-xs text-muted-foreground">Nenhum alerta pendente</p>
         </div>
       ) : (

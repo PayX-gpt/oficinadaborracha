@@ -28,7 +28,7 @@ const OperationalMetrics = ({ data }: { data?: DashboardData }) => {
       <DonutCard index={3} title="Impacto Taxas Máquina" percent={m.impactoTaxas.percent} details={[
         `${formatCurrency(m.impactoTaxas.total)} em taxas`,
         `Créd: ${formatCurrency(m.impactoTaxas.credito)} | Déb: ${formatCurrency(m.impactoTaxas.debito)}`,
-      ]} color="#3B82F6" />
+      ]} color="#BEBEBE" />
     </div>
   );
 };

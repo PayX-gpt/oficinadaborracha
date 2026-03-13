@@ -27,7 +27,7 @@ const PaymentMethods = ({ data }: { data?: DashboardData }) => {
                   if (!active || !payload?.length) return null;
                   const d = payload[0].payload;
                   return (
-                    <div className="rounded-lg px-3 py-2 text-xs border shadow-xl" style={{ background: "rgba(14,20,35,0.95)", borderColor: "rgba(245,158,11,0.3)" }}>
+                    <div className="rounded-lg px-3 py-2 text-xs border border-border bg-card shadow-xl">
                       <p className="text-foreground font-medium">{d.method}</p>
                       <p className="text-muted-foreground">{formatCurrency(d.bruto)} ({d.percent}%)</p>
                     </div>

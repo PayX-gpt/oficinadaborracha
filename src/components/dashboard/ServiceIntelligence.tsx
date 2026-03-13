@@ -49,7 +49,7 @@ const ServiceIntelligence = ({ data }: { data?: DashboardData }) => {
                     <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px]">
                       <span className="text-muted-foreground">{s.qty}x</span>
                       <span className="text-foreground">{formatCurrency(s.receita)}</span>
-                      <span className="text-emerald-500">{s.margem}%</span>
+                      <span className="text-success">{s.margem}%</span>
                       <span className="text-primary font-medium">{formatCurrency(s.lucro)}</span>
                     </div>
                   </div>
