@@ -54,6 +54,7 @@ const App = () => (
               <Route path="/pecas" element={<PecasPage />} />
               <Route path="/relatorios" element={<RelatoriosIA />} />
               <Route path="/install" element={<InstallPage />} />
+              <Route path="/playbook" element={<PlaybookPage />} />
               <Route path="/equipe" element={<div className="text-foreground"><h2 className="text-lg font-bold">Equipe</h2><p className="text-xs text-muted-foreground">Em breve — gestão de gerentes e operadores</p></div>} />
               <Route path="/perfil" element={<div className="text-foreground"><h2 className="text-lg font-bold">Meu Perfil</h2><p className="text-xs text-muted-foreground">Em breve</p></div>} />
             </Route>
