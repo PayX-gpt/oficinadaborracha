@@ -23,27 +23,27 @@ const KPICards = ({ data }: { data?: DashboardData }) => {
       value: data?.totalReceita ?? 0, prefix: "R$ ",
       sub: `${data?.totalServicos ?? 0} serviços`,
       spark: data?.sparkReceita ?? [],
-      sparkColor: "#F59E0B",
+      sparkColor: "#D20A0A",
       comp: comparativePercent(data?.totalReceita ?? 0, data?.prevReceita ?? 0),
     },
     {
-      label: "LUCRO BRUTO", icon: TrendingUp, color: "text-emerald-500",
+      label: "LUCRO BRUTO", icon: TrendingUp, color: "text-success",
       value: data?.lucroBruto ?? 0, prefix: "R$ ",
       sub: data?.totalReceita ? `Margem: ${((data.lucroBruto / data.totalReceita) * 100).toFixed(1)}%` : "Margem: —",
       spark: data?.sparkLucroBruto ?? [],
-      sparkColor: "#10B981",
+      sparkColor: "#33A833",
       comp: comparativePercent(data?.lucroBruto ?? 0, data?.prevLucroBruto ?? 0),
     },
     {
-      label: "LUCRO LÍQUIDO", icon: Wallet, color: "text-blue-500",
+      label: "LUCRO LÍQUIDO", icon: Wallet, color: "text-gold",
       value: data?.lucroLiquido ?? 0, prefix: "R$ ",
       sub: "Após despesas, taxas e custos", glow: true,
       spark: data?.sparkLucroLiquido ?? [],
-      sparkColor: "#3B82F6",
+      sparkColor: "#C9A84C",
       comp: comparativePercent(data?.lucroLiquido ?? 0, data?.prevLucroLiquido ?? 0),
     },
     {
-      label: "DESPESAS TOTAIS", icon: ArrowDownCircle, color: "text-red-500",
+      label: "DESPESAS TOTAIS", icon: ArrowDownCircle, color: "text-primary",
       value: data?.totalDespesas ?? 0, prefix: "R$ ",
       sub: `${data?.despesas?.length ?? 0} lançamentos`,
       spark: data?.sparkDespesas ?? [],
@@ -52,19 +52,19 @@ const KPICards = ({ data }: { data?: DashboardData }) => {
       invertComp: true,
     },
     {
-      label: "TICKET MÉDIO", icon: Receipt, color: "text-cyan-500",
+      label: "TICKET MÉDIO", icon: Receipt, color: "text-chrome",
       value: data?.ticketMedio ?? 0, prefix: "R$ ",
       sub: "Receita ÷ serviços",
       spark: data?.sparkTicket ?? [],
-      sparkColor: "#06B6D4",
+      sparkColor: "#BEBEBE",
       comp: comparativePercent(data?.ticketMedio ?? 0, data?.prevTicketMedio ?? 0),
     },
     {
-      label: "GANHO POR HORA", icon: Clock, color: "text-violet-500",
+      label: "GANHO POR HORA", icon: Clock, color: "text-gold",
       value: ganhoHora, prefix: "R$ ", suffix: "/h",
       sub: "Base: 8h/dia útil",
       spark: data?.sparkGanhoHora ?? [],
-      sparkColor: "#8B5CF6",
+      sparkColor: "#C9A84C",
       comp: comparativePercent(ganhoHora, prevGanhoHora),
     },
   ];
@@ -73,18 +73,17 @@ const KPICards = ({ data }: { data?: DashboardData }) => {
     <motion.div variants={container} initial="hidden" animate="show" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 md:gap-3">
       {kpis.map((kpi) => {
         const isPositive = kpi.value >= 0;
-        const glowColor = kpi.glow ? (isPositive ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)") : undefined;
+        const glowColor = kpi.glow ? (isPositive ? "rgba(201,168,76,0.15)" : "rgba(210,10,10,0.15)") : undefined;
         const compIsGood = kpi.invertComp ? !kpi.comp.isUp : kpi.comp.isUp;
         return (
           <motion.div key={kpi.label} variants={item}
-            className="group relative rounded-xl md:rounded-2xl p-3 md:p-4 space-y-1.5 md:space-y-2 transition-all duration-300"
+            className="group relative rounded-xl md:rounded-2xl p-3 md:p-4 space-y-1.5 md:space-y-2 transition-all duration-300 bg-card border border-border"
             style={{
-              background: "rgba(14,20,35,0.85)", backdropFilter: "blur(16px)", border: "1px solid rgba(245,158,11,0.08)",
               boxShadow: glowColor
-                ? `0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03), 0 0 20px ${glowColor}`
-                : "0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03)",
+                ? `0 4px 24px rgba(0,0,0,0.3), 0 0 20px ${glowColor}`
+                : "0 4px 24px rgba(0,0,0,0.3)",
             }}
-            whileHover={{ borderColor: "rgba(245,158,11,0.2)" }}>
+            whileHover={{ borderColor: "rgba(210,10,10,0.2)" }}>
             <div className="flex items-center justify-between">
               <span className="text-[9px] md:text-[11px] uppercase tracking-[0.05em] text-muted-foreground font-medium leading-tight">{kpi.label}</span>
               <kpi.icon className={`h-3.5 w-3.5 md:h-4 md:w-4 ${kpi.color}`} />
@@ -95,7 +94,7 @@ const KPICards = ({ data }: { data?: DashboardData }) => {
             <div className="flex items-center justify-between gap-1">
               <div className="flex items-center gap-1 min-w-0">
                 {kpi.comp.pct > 0 && (
-                  <span className={`flex items-center gap-0.5 text-[9px] md:text-[10px] font-medium shrink-0 ${compIsGood ? "text-emerald-500" : "text-red-400"}`}>
+                  <span className={`flex items-center gap-0.5 text-[9px] md:text-[10px] font-medium shrink-0 ${compIsGood ? "text-success" : "text-primary"}`}>
                     {kpi.comp.isUp ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
                     {kpi.comp.pct.toFixed(0)}%
                   </span>
