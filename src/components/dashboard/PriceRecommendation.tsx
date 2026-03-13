@@ -41,8 +41,7 @@ const PriceRecommendation = () => {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.05, duration: 0.4 }}
-      className="rounded-xl p-3 md:p-6 transition-all duration-300 overflow-hidden"
-      style={{ background: "rgba(14,20,35,0.85)", backdropFilter: "blur(16px)", border: "1px solid rgba(245,158,11,0.08)", boxShadow: "0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03)" }}>
+      className="rounded-xl p-3 md:p-6 transition-all duration-300 overflow-hidden bg-card border border-border">
       
       <h3 className="text-[11px] uppercase tracking-[0.05em] text-muted-foreground font-medium flex items-center gap-1.5 mb-3">
         <DollarSign className="h-3.5 w-3.5 text-primary shrink-0" />
