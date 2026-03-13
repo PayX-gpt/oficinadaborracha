@@ -66,7 +66,7 @@ const AppHeader = () => {
     <header className="fixed top-0 left-0 right-0 z-50 flex h-14 items-center justify-between border-b border-primary/30 px-3 md:px-4 bg-background/95 backdrop-blur-xl">
       {/* Left: Logo */}
       <div className="flex items-center gap-2">
-        <div className="h-8 w-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0" style={{ boxShadow: "0 0 12px hsl(var(--primary) / 0.2)" }}>
+        <div className="h-8 w-8 overflow-hidden flex items-center justify-center shrink-0 bg-primary flex items-center justify-center">
           <img src={odbLogo} alt="ODB" className="h-8 w-8 object-contain" />
         </div>
         <span className="text-sm font-bold text-foreground hidden md:block">Oficina da Borracha</span>
