@@ -41,7 +41,7 @@ const ManufacturingAnalysis = ({ data }: { data?: DashboardData }) => {
             <Tooltip content={({ active, payload, label }) => {
               if (!active || !payload?.length) return null;
               return (
-                <div className="rounded-lg px-3 py-2 text-xs border shadow-xl" style={{ background: "rgba(14,20,35,0.95)", borderColor: "rgba(245,158,11,0.3)" }}>
+                <div className="rounded-lg px-3 py-2 text-xs border border-border bg-card shadow-xl">
                   <p className="text-foreground font-medium">{label}</p>
                   <p className="text-emerald-500">Receita: {formatCurrency(payload[0]?.value as number)}</p>
                   <p className="text-red-400">Custo: {formatCurrency(payload[1]?.value as number)}</p>
