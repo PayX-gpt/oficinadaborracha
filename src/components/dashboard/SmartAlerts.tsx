@@ -14,9 +14,9 @@ interface Notificacao {
 }
 
 const tipoConfig: Record<string, { icon: any; color: string; bg: string }> = {
-  alerta: { icon: AlertTriangle, color: "text-red-400", bg: "bg-red-500/10" },
-  insight: { icon: TrendingUp, color: "text-blue-400", bg: "bg-blue-500/10" },
-  sucesso: { icon: CheckCircle, color: "text-emerald-400", bg: "bg-emerald-500/10" },
+  alerta: { icon: AlertTriangle, color: "text-primary", bg: "bg-primary/10" },
+  insight: { icon: TrendingUp, color: "text-gold", bg: "bg-gold/10" },
+  sucesso: { icon: CheckCircle, color: "text-success", bg: "bg-success/10" },
 };
 
 const SmartAlerts = () => {
@@ -61,15 +61,14 @@ const SmartAlerts = () => {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.95, duration: 0.4 }}
-      className="rounded-xl p-3 md:p-6 transition-all duration-300 overflow-hidden"
-      style={{ background: "rgba(14,20,35,0.85)", backdropFilter: "blur(16px)", border: "1px solid rgba(245,158,11,0.08)", boxShadow: "0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03)" }}>
+      className="rounded-xl p-3 md:p-6 transition-all duration-300 overflow-hidden bg-card border border-border">
       
       <div className="flex items-center justify-between gap-2 mb-3">
         <h3 className="text-[11px] uppercase tracking-[0.05em] text-muted-foreground font-medium flex items-center gap-1.5">
           <Bell className="h-3.5 w-3.5 text-primary shrink-0" />
           <span>Alertas Inteligentes</span>
           {visibleAlerts.length > 0 && (
-            <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white px-1">
+            <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground px-1">
               {visibleAlerts.length}
             </span>
           )}
@@ -83,7 +82,7 @@ const SmartAlerts = () => {
 
       {visibleAlerts.length === 0 ? (
         <div className="text-center py-4">
-          <CheckCircle className="h-6 w-6 text-emerald-500/30 mx-auto mb-1" />
+          <CheckCircle className="h-6 w-6 text-success/30 mx-auto mb-1" />
           <p className="text-xs text-muted-foreground">Nenhum alerta pendente</p>
         </div>
       ) : (

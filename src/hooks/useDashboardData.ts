@@ -14,58 +14,46 @@ export interface DashboardData {
   lucroLiquido: number;
   totalServicos: number;
   ticketMedio: number;
-  // Comparatives (vs previous period)
   prevReceita: number;
   prevLucroBruto: number;
   prevLucroLiquido: number;
   prevDespesas: number;
   prevTicketMedio: number;
   prevServicos: number;
-  // Sparkline data (last 7 data points)
   sparkReceita: number[];
   sparkLucroBruto: number[];
   sparkLucroLiquido: number[];
   sparkDespesas: number[];
   sparkTicket: number[];
   sparkGanhoHora: number[];
-  // Payment methods breakdown
   paymentMethods: { method: string; qty: number; bruto: number; taxas: number; liquido: number; percent: number; color: string }[];
-  // Hourly breakdown
   hourlyRevenue: { hour: string; value: number; services: number }[];
-  // Expense categories
   expenseCategories: { category: string; value: number; percent: number; color: string }[];
-  // Revenue by day
   revenueByDay: { day: string; maoDeObra: number; fabricadas: number; compradas: number; total: number }[];
-  // Profit by day
   profitByDay: { day: string; lucroBruto: number; lucroLiquido: number }[];
-  // Manufacturing
   manufacturing: {
     receita: number; custoMP: number; margem: number; pecas: number;
     custoMedioPeca: number; precoMedioCobrado: number; roi: number;
     timeline: { day: string; receita: number; custo: number }[];
   };
-  // Operational
   operational: {
     margemFabricadas: { percent: number; receita: number; custo: number; pecas: number };
     margemCompradas: { percent: number; receita: number; custo: number; pecas: number };
     taxaDesconto: { percent: number; total: number; count: number; media: number };
     impactoTaxas: { percent: number; total: number; credito: number; debito: number };
   };
-  // Service intelligence
   topServices: { pos: number; nome: string; veiculo: string; qty: number; receita: number; custo: number; margem: number; lucro: number }[];
   lowMarginServices: { pos: number; nome: string; qty: number; receita: number; custo: number; margem: number; lucro: number }[];
   vehicleRanking: { veiculo: string; servicos: number; receita: number; ticket: number; servicoComum: string }[];
-  // Branch comparison
   branchComparison: { filial: string; filialId: string; receita: number; lucro: number; servicos: number; ticket: number }[];
-  // Month projection
   monthProjection: { receitaProj: number; lucroProj: number; diasPassados: number; diasNoMes: number; progressPercent: number };
 }
 
 const PAYMENT_COLORS: Record<string, string> = {
-  PIX: "#10B981", Dinheiro: "#F59E0B", Débito: "#3B82F6",
-  Crédito: "#8B5CF6", Cartão: "#8B5CF6",
+  PIX: "#33A833", Dinheiro: "#C9A84C", Débito: "#BEBEBE",
+  Crédito: "#D20A0A", Cartão: "#D20A0A",
 };
-const EXPENSE_COLORS = ["#F59E0B", "#3B82F6", "#8B5CF6", "#06B6D4", "#EF4444", "#64748B", "#10B981", "#EC4899"];
+const EXPENSE_COLORS = ["#D20A0A", "#C9A84C", "#BEBEBE", "#666666", "#EF4444", "#555555", "#33A833", "#999999"];
 const DAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 function getDateRange(period: string): { start: Date; end?: Date } {
@@ -147,18 +135,15 @@ export function useDashboardData(period: string, branch: string = "all") {
       let despQ = supabase.from("despesas").select("*").gte("created_at", isoStart);
       let itemsQ = supabase.from("lancamento_items").select("*").gte("created_at", isoStart);
 
-      // Previous period
       let prevLancQ = supabase.from("lancamentos").select("valor_bruto, custo_total, desconto, taxa_valor").gte("created_at", prev.start.toISOString()).lt("created_at", prev.end.toISOString());
       let prevDespQ = supabase.from("despesas").select("valor").gte("created_at", prev.start.toISOString()).lt("created_at", prev.end.toISOString());
 
-      // Sparkline: last 7 days
       const spark7Start = new Date();
       spark7Start.setDate(spark7Start.getDate() - 7);
       spark7Start.setHours(0, 0, 0, 0);
       let sparkLancQ = supabase.from("lancamentos").select("created_at, valor_bruto, custo_total, desconto, taxa_valor").gte("created_at", spark7Start.toISOString());
       let sparkDespQ = supabase.from("despesas").select("created_at, valor").gte("created_at", spark7Start.toISOString());
 
-      // Branch comparison
       let branchLancQ = supabase.from("lancamentos").select("filial_id, valor_bruto, lucro").gte("created_at", isoStart);
       let filiaisQ = supabase.from("filiais").select("id, nome").eq("ativa", true);
 
@@ -196,7 +181,6 @@ export function useDashboardData(period: string, branch: string = "all") {
       const despesas = despRes.data || [];
       const items = itemsRes.data || [];
 
-      // Basic totals
       const totalReceita = lancamentos.reduce((s, l) => s + Number(l.valor_bruto), 0);
       const totalCusto = lancamentos.reduce((s, l) => s + Number(l.custo_total), 0);
       const totalDesconto = lancamentos.reduce((s, l) => s + Number(l.desconto), 0);
@@ -207,7 +191,6 @@ export function useDashboardData(period: string, branch: string = "all") {
       const totalServicos = lancamentos.length;
       const ticketMedio = totalServicos > 0 ? totalReceita / totalServicos : 0;
 
-      // Previous period totals
       const prevLancs = prevLancRes.data || [];
       const prevDesps = prevDespRes.data || [];
       const prevReceita = prevLancs.reduce((s, l) => s + Number(l.valor_bruto), 0);
@@ -220,7 +203,6 @@ export function useDashboardData(period: string, branch: string = "all") {
       const prevServicos = prevLancs.length;
       const prevTicketMedio = prevServicos > 0 ? prevReceita / prevServicos : 0;
 
-      // Sparkline data: aggregate by day for last 7 days
       const sparkLancs = sparkLancRes.data || [];
       const sparkDesps = sparkDespRes.data || [];
       const sparkDayMap = new Map<string, { receita: number; custo: number; desconto: number; taxas: number; despesas: number; servicos: number }>();
@@ -233,13 +215,7 @@ export function useDashboardData(period: string, branch: string = "all") {
       sparkLancs.forEach(l => {
         const key = new Date(l.created_at).toISOString().split("T")[0];
         const cur = sparkDayMap.get(key);
-        if (cur) {
-          cur.receita += Number(l.valor_bruto);
-          cur.custo += Number(l.custo_total);
-          cur.desconto += Number(l.desconto);
-          cur.taxas += Number(l.taxa_valor);
-          cur.servicos++;
-        }
+        if (cur) { cur.receita += Number(l.valor_bruto); cur.custo += Number(l.custo_total); cur.desconto += Number(l.desconto); cur.taxas += Number(l.taxa_valor); cur.servicos++; }
       });
       sparkDesps.forEach(d => {
         const key = new Date(d.created_at).toISOString().split("T")[0];
@@ -254,16 +230,13 @@ export function useDashboardData(period: string, branch: string = "all") {
       const sparkTicket = sparkArr.map(d => d.servicos > 0 ? d.receita / d.servicos : 0);
       const sparkGanhoHora = sparkArr.map(d => d.servicos > 0 ? (d.receita - d.custo - d.despesas - d.taxas - d.desconto) / (d.servicos * 0.5) : 0);
 
-      // Branch comparison
       const branchLancs = branchLancRes.data || [];
       const filiais = filiaisRes.data || [];
       const branchMap = new Map<string, { receita: number; lucro: number; servicos: number }>();
       branchLancs.forEach(l => {
         const fid = l.filial_id || "sem_filial";
         const cur = branchMap.get(fid) || { receita: 0, lucro: 0, servicos: 0 };
-        cur.receita += Number(l.valor_bruto);
-        cur.lucro += Number(l.lucro);
-        cur.servicos++;
+        cur.receita += Number(l.valor_bruto); cur.lucro += Number(l.lucro); cur.servicos++;
         branchMap.set(fid, cur);
       });
       const branchComparison = filiais.map(f => {
@@ -271,7 +244,6 @@ export function useDashboardData(period: string, branch: string = "all") {
         return { filial: f.nome, filialId: f.id, receita: d.receita, lucro: d.lucro, servicos: d.servicos, ticket: d.servicos > 0 ? Math.round(d.receita / d.servicos) : 0 };
       }).sort((a, b) => b.receita - a.receita);
 
-      // Month projection
       const now = new Date();
       const diasNoMes = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
       const diasPassados = now.getDate();
@@ -282,209 +254,122 @@ export function useDashboardData(period: string, branch: string = "all") {
       const progressPercent = Math.round((diasPassados / diasNoMes) * 100);
       const monthProjection = { receitaProj, lucroProj, diasPassados, diasNoMes, progressPercent };
 
-      // Payment methods
       const pmMap = new Map<string, { qty: number; bruto: number; taxas: number }>();
       lancamentos.forEach((l) => {
         const m = l.metodo_pagamento || "Outro";
         const cur = pmMap.get(m) || { qty: 0, bruto: 0, taxas: 0 };
-        cur.qty++;
-        cur.bruto += Number(l.valor_bruto);
-        cur.taxas += Number(l.taxa_valor);
+        cur.qty++; cur.bruto += Number(l.valor_bruto); cur.taxas += Number(l.taxa_valor);
         pmMap.set(m, cur);
       });
       const paymentMethods = Array.from(pmMap.entries())
-        .map(([method, v]) => ({
-          method, qty: v.qty, bruto: v.bruto, taxas: v.taxas,
-          liquido: v.bruto - v.taxas,
-          percent: totalReceita > 0 ? Math.round((v.bruto / totalReceita) * 100) : 0,
-          color: PAYMENT_COLORS[method] || "#64748B",
-        }))
+        .map(([method, v]) => ({ method, qty: v.qty, bruto: v.bruto, taxas: v.taxas, liquido: v.bruto - v.taxas, percent: totalReceita > 0 ? Math.round((v.bruto / totalReceita) * 100) : 0, color: PAYMENT_COLORS[method] || "#666666" }))
         .sort((a, b) => b.bruto - a.bruto);
 
-      // Hourly breakdown
       const hourMap = new Map<number, { value: number; services: number }>();
-      lancamentos.forEach((l) => {
-        const h = new Date(l.created_at).getHours();
-        const cur = hourMap.get(h) || { value: 0, services: 0 };
-        cur.value += Number(l.valor_bruto);
-        cur.services++;
-        hourMap.set(h, cur);
-      });
-      const hourlyRevenue = Array.from({ length: 12 }, (_, i) => {
-        const h = i + 7;
-        const d = hourMap.get(h) || { value: 0, services: 0 };
-        return { hour: `${h}h`, value: d.value, services: d.services };
-      });
+      lancamentos.forEach((l) => { const h = new Date(l.created_at).getHours(); const cur = hourMap.get(h) || { value: 0, services: 0 }; cur.value += Number(l.valor_bruto); cur.services++; hourMap.set(h, cur); });
+      const hourlyRevenue = Array.from({ length: 12 }, (_, i) => { const h = i + 7; const d = hourMap.get(h) || { value: 0, services: 0 }; return { hour: `${h}h`, value: d.value, services: d.services }; });
 
-      // Expense categories
       const ecMap = new Map<string, number>();
-      despesas.forEach((d) => {
-        ecMap.set(d.categoria, (ecMap.get(d.categoria) || 0) + Number(d.valor));
-      });
+      despesas.forEach((d) => { ecMap.set(d.categoria, (ecMap.get(d.categoria) || 0) + Number(d.valor)); });
       const expenseCategories = Array.from(ecMap.entries())
-        .map(([category, value], i) => ({
-          category, value,
-          percent: totalDespesas > 0 ? Math.round((value / totalDespesas) * 100) : 0,
-          color: EXPENSE_COLORS[i % EXPENSE_COLORS.length],
-        }))
+        .map(([category, value], i) => ({ category, value, percent: totalDespesas > 0 ? Math.round((value / totalDespesas) * 100) : 0, color: EXPENSE_COLORS[i % EXPENSE_COLORS.length] }))
         .sort((a, b) => b.value - a.value);
 
-      // Revenue/Profit by day
       const dayRevMap = new Map<number, { maoDeObra: number; fabricadas: number; compradas: number; total: number; custo: number }>();
-      lancamentos.forEach((l) => {
-        const dow = new Date(l.created_at).getDay();
-        const cur = dayRevMap.get(dow) || { maoDeObra: 0, fabricadas: 0, compradas: 0, total: 0, custo: 0 };
-        cur.total += Number(l.valor_bruto);
-        cur.custo += Number(l.custo_total);
-        dayRevMap.set(dow, cur);
-      });
+      lancamentos.forEach((l) => { const dow = new Date(l.created_at).getDay(); const cur = dayRevMap.get(dow) || { maoDeObra: 0, fabricadas: 0, compradas: 0, total: 0, custo: 0 }; cur.total += Number(l.valor_bruto); cur.custo += Number(l.custo_total); dayRevMap.set(dow, cur); });
 
       const itemsByLanc = new Map<string, any[]>();
-      items.forEach((it) => {
-        const arr = itemsByLanc.get(it.lancamento_id) || [];
-        arr.push(it);
-        itemsByLanc.set(it.lancamento_id, arr);
-      });
+      items.forEach((it) => { const arr = itemsByLanc.get(it.lancamento_id) || []; arr.push(it); itemsByLanc.set(it.lancamento_id, arr); });
 
       lancamentos.forEach((l) => {
         const dow = new Date(l.created_at).getDay();
         const cur = dayRevMap.get(dow)!;
         const litems = itemsByLanc.get(l.id) || [];
-        litems.forEach((it) => {
-          const val = Number(it.valor_cobrado);
-          if (it.tipo === "fabricada" || it.tipo === "peca_fabricada") cur.fabricadas += val;
-          else if (it.tipo === "comprada" || it.tipo === "peca_comprada") cur.compradas += val;
-          else cur.maoDeObra += val;
-        });
+        litems.forEach((it) => { const val = Number(it.valor_cobrado); if (it.tipo === "fabricada" || it.tipo === "peca_fabricada") cur.fabricadas += val; else if (it.tipo === "comprada" || it.tipo === "peca_comprada") cur.compradas += val; else cur.maoDeObra += val; });
         if (litems.length === 0) cur.maoDeObra += Number(l.valor_bruto);
       });
 
-      const revenueByDay = [1, 2, 3, 4, 5, 6, 0].map((dow) => {
-        const d = dayRevMap.get(dow) || { maoDeObra: 0, fabricadas: 0, compradas: 0, total: 0, custo: 0 };
-        return { day: DAYS[dow], maoDeObra: d.maoDeObra, fabricadas: d.fabricadas, compradas: d.compradas, total: d.total };
-      });
+      const revenueByDay = [1, 2, 3, 4, 5, 6, 0].map((dow) => { const d = dayRevMap.get(dow) || { maoDeObra: 0, fabricadas: 0, compradas: 0, total: 0, custo: 0 }; return { day: DAYS[dow], maoDeObra: d.maoDeObra, fabricadas: d.fabricadas, compradas: d.compradas, total: d.total }; });
 
       const dayDespMap = new Map<number, number>();
-      despesas.forEach((d) => {
-        const dow = new Date(d.created_at).getDay();
-        dayDespMap.set(dow, (dayDespMap.get(dow) || 0) + Number(d.valor));
-      });
+      despesas.forEach((d) => { const dow = new Date(d.created_at).getDay(); dayDespMap.set(dow, (dayDespMap.get(dow) || 0) + Number(d.valor)); });
 
-      const profitByDay = [1, 2, 3, 4, 5, 6, 0].map((dow) => {
-        const rev = dayRevMap.get(dow) || { total: 0, custo: 0 };
-        const desp = dayDespMap.get(dow) || 0;
-        return { day: DAYS[dow], lucroBruto: rev.total - rev.custo, lucroLiquido: rev.total - rev.custo - desp };
-      });
+      const profitByDay = [1, 2, 3, 4, 5, 6, 0].map((dow) => { const rev = dayRevMap.get(dow) || { total: 0, custo: 0 }; const desp = dayDespMap.get(dow) || 0; return { day: DAYS[dow], lucroBruto: rev.total - rev.custo, lucroLiquido: rev.total - rev.custo - desp }; });
 
-      // Manufacturing
       const fabItems = items.filter((it) => it.tipo === "fabricada" || it.tipo === "peca_fabricada");
       const mfgReceita = fabItems.reduce((s, it) => s + Number(it.valor_cobrado), 0);
       const mfgCusto = fabItems.reduce((s, it) => s + Number(it.custo), 0);
       const mfgPecas = fabItems.length;
       const mfgMargem = mfgReceita > 0 ? Math.round(((mfgReceita - mfgCusto) / mfgReceita) * 100) : 0;
+      const custoMedioPeca = mfgPecas > 0 ? mfgCusto / mfgPecas : 0;
+      const precoMedioCobrado = mfgPecas > 0 ? mfgReceita / mfgPecas : 0;
+      const roi = mfgCusto > 0 ? Math.round((mfgReceita / mfgCusto) * 10) / 10 : 0;
 
-      const mfgDayMap = new Map<number, { receita: number; custo: number }>();
-      fabItems.forEach((it) => {
-        const dow = new Date(it.created_at).getDay();
-        const cur = mfgDayMap.get(dow) || { receita: 0, custo: 0 };
-        cur.receita += Number(it.valor_cobrado);
-        cur.custo += Number(it.custo);
-        mfgDayMap.set(dow, cur);
-      });
-      const mfgTimeline = [1, 2, 3, 4, 5, 6].map((dow) => {
-        const d = mfgDayMap.get(dow) || { receita: 0, custo: 0 };
-        return { day: DAYS[dow], receita: d.receita, custo: d.custo };
-      });
+      const mfgDayMap = new Map<string, { receita: number; custo: number }>();
+      fabItems.forEach(it => { const d = new Date(it.created_at).toLocaleDateString("pt-BR", { weekday: "short" }); const cur = mfgDayMap.get(d) || { receita: 0, custo: 0 }; cur.receita += Number(it.valor_cobrado); cur.custo += Number(it.custo); mfgDayMap.set(d, cur); });
+      const mfgTimeline = Array.from(mfgDayMap.entries()).map(([day, v]) => ({ day, receita: v.receita, custo: v.custo }));
 
-      const manufacturing = {
-        receita: mfgReceita, custoMP: mfgCusto, margem: mfgMargem, pecas: mfgPecas,
-        custoMedioPeca: mfgPecas > 0 ? mfgCusto / mfgPecas : 0,
-        precoMedioCobrado: mfgPecas > 0 ? mfgReceita / mfgPecas : 0,
-        roi: mfgCusto > 0 ? Number((mfgReceita / mfgCusto).toFixed(1)) : 0,
-        timeline: mfgTimeline,
-      };
+      const manufacturing = { receita: mfgReceita, custoMP: mfgCusto, margem: mfgMargem, pecas: mfgPecas, custoMedioPeca, precoMedioCobrado, roi, timeline: mfgTimeline };
 
-      // Operational
       const compItems = items.filter((it) => it.tipo === "comprada" || it.tipo === "peca_comprada");
       const compReceita = compItems.reduce((s, it) => s + Number(it.valor_cobrado), 0);
       const compCusto = compItems.reduce((s, it) => s + Number(it.custo), 0);
-      const descontoCount = lancamentos.filter((l) => Number(l.desconto) > 0).length;
-      const creditoTaxas = lancamentos.filter((l) => (l.metodo_pagamento || "").toLowerCase().includes("créd")).reduce((s, l) => s + Number(l.taxa_valor), 0);
-      const debitoTaxas = lancamentos.filter((l) => (l.metodo_pagamento || "").toLowerCase().includes("déb")).reduce((s, l) => s + Number(l.taxa_valor), 0);
+      const margemFab = mfgReceita > 0 ? Math.round(((mfgReceita - mfgCusto) / mfgReceita) * 100) : 0;
+      const margemComp = compReceita > 0 ? Math.round(((compReceita - compCusto) / compReceita) * 100) : 0;
+      const descCount = lancamentos.filter(l => Number(l.desconto) > 0).length;
+      const taxaDesc = totalReceita > 0 ? Math.round((totalDesconto / totalReceita) * 100) : 0;
+      const mediaDesc = descCount > 0 ? totalDesconto / descCount : 0;
+      const taxaImpacto = totalReceita > 0 ? Math.round((totalTaxas / totalReceita) * 100) : 0;
+      const credTaxas = lancamentos.filter(l => (l.metodo_pagamento || "").startsWith("Crédito")).reduce((s, l) => s + Number(l.taxa_valor), 0);
+      const debTaxas = lancamentos.filter(l => l.metodo_pagamento === "Débito").reduce((s, l) => s + Number(l.taxa_valor), 0);
 
       const operational = {
-        margemFabricadas: { percent: mfgMargem, receita: mfgReceita, custo: mfgCusto, pecas: mfgPecas },
-        margemCompradas: {
-          percent: compReceita > 0 ? Math.round(((compReceita - compCusto) / compReceita) * 100) : 0,
-          receita: compReceita, custo: compCusto, pecas: compItems.length,
-        },
-        taxaDesconto: {
-          percent: totalServicos > 0 ? Math.round((descontoCount / totalServicos) * 100) : 0,
-          total: totalDesconto, count: descontoCount, media: descontoCount > 0 ? totalDesconto / descontoCount : 0,
-        },
-        impactoTaxas: {
-          percent: totalReceita > 0 ? Number(((totalTaxas / totalReceita) * 100).toFixed(1)) : 0,
-          total: totalTaxas, credito: creditoTaxas, debito: debitoTaxas,
-        },
+        margemFabricadas: { percent: margemFab, receita: mfgReceita, custo: mfgCusto, pecas: mfgPecas },
+        margemCompradas: { percent: margemComp, receita: compReceita, custo: compCusto, pecas: compItems.length },
+        taxaDesconto: { percent: taxaDesc, total: totalDesconto, count: descCount, media: mediaDesc },
+        impactoTaxas: { percent: taxaImpacto, total: totalTaxas, credito: credTaxas, debito: debTaxas },
       };
 
-      // Service intelligence
-      const svcMap = new Map<string, { qty: number; receita: number; custo: number; veiculos: Map<string, number> }>();
-      items.forEach((it) => {
-        const desc = it.descricao || "Serviço";
-        const cur = svcMap.get(desc) || { qty: 0, receita: 0, custo: 0, veiculos: new Map() };
-        cur.qty++;
-        cur.receita += Number(it.valor_cobrado);
-        cur.custo += Number(it.custo);
-        const parent = lancamentos.find((l) => l.id === it.lancamento_id);
-        if (parent?.veiculo_desc) cur.veiculos.set(parent.veiculo_desc, (cur.veiculos.get(parent.veiculo_desc) || 0) + 1);
+      const svcMap = new Map<string, { qty: number; receita: number; custo: number; veiculo: string }>();
+      lancamentos.forEach(l => {
+        const desc = l.descricao_resumo || "Serviço";
+        const cur = svcMap.get(desc) || { qty: 0, receita: 0, custo: 0, veiculo: l.veiculo_desc || "" };
+        cur.qty++; cur.receita += Number(l.valor_bruto); cur.custo += Number(l.custo_total);
         svcMap.set(desc, cur);
       });
+      const topServices = Array.from(svcMap.entries())
+        .map(([nome, v]) => ({ nome, ...v, margem: v.receita > 0 ? Math.round(((v.receita - v.custo) / v.receita) * 100) : 0, lucro: v.receita - v.custo }))
+        .sort((a, b) => b.lucro - a.lucro).slice(0, 10)
+        .map((s, i) => ({ pos: i + 1, ...s }));
+      const lowMarginServices = Array.from(svcMap.entries())
+        .map(([nome, v]) => ({ nome, ...v, margem: v.receita > 0 ? Math.round(((v.receita - v.custo) / v.receita) * 100) : 0, lucro: v.receita - v.custo }))
+        .filter(s => s.margem < 30).sort((a, b) => a.margem - b.margem).slice(0, 5)
+        .map((s, i) => ({ pos: i + 1, ...s }));
 
-      const allServices = Array.from(svcMap.entries()).map(([nome, v]) => {
-        const lucro = v.receita - v.custo;
-        const margem = v.receita > 0 ? Math.round((lucro / v.receita) * 100) : 0;
-        const topVeiculo = v.veiculos.size > 0
-          ? Array.from(v.veiculos.entries()).sort((a, b) => b[1] - a[1])[0][0]
-          : "Diversos";
-        return { nome, qty: v.qty, receita: v.receita, custo: v.custo, margem, lucro, veiculo: topVeiculo };
-      });
-
-      const topServices = allServices.sort((a, b) => b.lucro - a.lucro).slice(0, 5).map((s, i) => ({ ...s, pos: i + 1 }));
-      const lowMarginServices = allServices.filter((s) => s.margem < 50 && s.qty > 0).sort((a, b) => a.margem - b.margem).slice(0, 5).map((s, i) => ({ ...s, pos: i + 1 }));
-
-      // Vehicle ranking
-      const vMap = new Map<string, { servicos: number; receita: number; items: Map<string, number> }>();
-      lancamentos.forEach((l) => {
+      const vehMap = new Map<string, { servicos: number; receita: number; svcMap: Map<string, number> }>();
+      lancamentos.forEach(l => {
         const v = l.veiculo_desc || "Não informado";
-        const cur = vMap.get(v) || { servicos: 0, receita: 0, items: new Map() };
-        cur.servicos++;
-        cur.receita += Number(l.valor_bruto);
-        const litems = itemsByLanc.get(l.id) || [];
-        litems.forEach((it) => { cur.items.set(it.descricao, (cur.items.get(it.descricao) || 0) + 1); });
-        vMap.set(v, cur);
+        const cur = vehMap.get(v) || { servicos: 0, receita: 0, svcMap: new Map() };
+        cur.servicos++; cur.receita += Number(l.valor_bruto);
+        const desc = l.descricao_resumo || "Serviço";
+        cur.svcMap.set(desc, (cur.svcMap.get(desc) || 0) + 1);
+        vehMap.set(v, cur);
       });
-      const vehicleRanking = Array.from(vMap.entries())
-        .map(([veiculo, v]) => ({
-          veiculo, servicos: v.servicos, receita: v.receita,
-          ticket: v.servicos > 0 ? Math.round(v.receita / v.servicos) : 0,
-          servicoComum: v.items.size > 0 ? Array.from(v.items.entries()).sort((a, b) => b[1] - a[1])[0][0] : "—",
-        }))
-        .sort((a, b) => b.receita - a.receita)
-        .slice(0, 10);
+      const vehicleRanking = Array.from(vehMap.entries())
+        .map(([veiculo, v]) => {
+          const servicoComum = Array.from(v.svcMap.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] || "";
+          return { veiculo, servicos: v.servicos, receita: v.receita, ticket: v.servicos > 0 ? Math.round(v.receita / v.servicos) : 0, servicoComum };
+        }).sort((a, b) => b.receita - a.receita).slice(0, 10);
 
       return {
         lancamentos, despesas, items,
-        totalReceita, totalCusto, totalDespesas, totalDesconto, totalTaxas,
-        lucroBruto, lucroLiquido, totalServicos, ticketMedio,
+        totalReceita, totalCusto, totalDespesas, totalDesconto, totalTaxas, lucroBruto, lucroLiquido, totalServicos, ticketMedio,
         prevReceita, prevLucroBruto, prevLucroLiquido, prevDespesas: prevDespesasVal, prevTicketMedio, prevServicos,
         sparkReceita, sparkLucroBruto, sparkLucroLiquido, sparkDespesas: sparkDespesasArr, sparkTicket, sparkGanhoHora,
-        paymentMethods, hourlyRevenue, expenseCategories,
-        revenueByDay, profitByDay, manufacturing, operational,
-        topServices, lowMarginServices, vehicleRanking,
-        branchComparison, monthProjection,
+        paymentMethods, hourlyRevenue, expenseCategories, revenueByDay, profitByDay, manufacturing, operational,
+        topServices, lowMarginServices, vehicleRanking, branchComparison, monthProjection,
       };
     },
-    refetchInterval: 30000,
+    refetchInterval: 60000,
   });
 }

@@ -22,19 +22,17 @@ const FinancialHealth = ({ data }: { data?: DashboardData }) => {
   const proj = data?.monthProjection ?? { receitaProj: 0, lucroProj: 0, diasPassados: 0, diasNoMes: 30, progressPercent: 0 };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.4 }}
-      className="rounded-xl p-3 md:p-6 transition-all duration-300 overflow-hidden"
-      style={{ background: "rgba(14,20,35,0.85)", backdropFilter: "blur(16px)", border: "1px solid rgba(245,158,11,0.15)", boxShadow: "0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03)" }}>
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.4 }}
+      className="rounded-xl p-3 md:p-6 transition-all duration-300 overflow-hidden bg-card border border-border"
+      style={{ borderColor: "rgba(210,10,10,0.15)" }}>
       <h3 className="text-[11px] uppercase tracking-[0.05em] text-muted-foreground font-medium mb-3">Saúde Financeira</h3>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
-        {/* Score */}
         <div className="text-center space-y-2">
           <div className="relative w-28 h-14 mx-auto">
             <svg viewBox="0 0 120 60" className="w-full h-full">
               <path d="M10 55 A50 50 0 0 1 110 55" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" strokeLinecap="round" />
               <motion.path d="M10 55 A50 50 0 0 1 110 55" fill="none"
-                stroke={score > 60 ? "#10B981" : score > 30 ? "#F59E0B" : "#EF4444"}
+                stroke={score > 60 ? "#33A833" : score > 30 ? "#C9A84C" : "#D20A0A"}
                 strokeWidth="8" strokeLinecap="round"
                 initial={{ strokeDasharray: "0 157" }}
                 animate={{ strokeDasharray: `${(score / 100) * 157} 157` }}
@@ -52,13 +50,12 @@ const FinancialHealth = ({ data }: { data?: DashboardData }) => {
           </p>
         </div>
 
-        {/* Fluxo de Caixa */}
         <div className="space-y-2">
           <p className="text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-medium">Caixa da Empresa</p>
           <div className="flex items-center gap-2">
             <p className="text-xl font-bold text-foreground tabular-nums">{formatCurrency(caixa)}</p>
             {caixa < 0 && (
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-500/20 text-red-400 animate-pulse">NEGATIVO</span>
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-primary/20 text-primary animate-pulse">NEGATIVO</span>
             )}
           </div>
           <div className="h-10">
@@ -66,33 +63,30 @@ const FinancialHealth = ({ data }: { data?: DashboardData }) => {
               <AreaChart data={cashData}>
                 <defs>
                   <linearGradient id="cashGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10B981" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#C9A84C" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#C9A84C" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <Area type="monotone" dataKey="value" stroke="#10B981" fill="url(#cashGrad)" strokeWidth={1.5} dot={false} />
+                <Area type="monotone" dataKey="value" stroke="#C9A84C" fill="url(#cashGrad)" strokeWidth={1.5} dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
           <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px]">
-            <span className="text-emerald-500">+{formatCurrency(totalReceita)}</span>
-            <span className="text-red-500">-{formatCurrency(totalDespesas + totalTaxas)}</span>
+            <span className="text-success">+{formatCurrency(totalReceita)}</span>
+            <span className="text-primary">-{formatCurrency(totalDespesas + totalTaxas)}</span>
           </div>
         </div>
 
-        {/* Projeção do Mês */}
         <div className="space-y-2">
           <p className="text-[10px] uppercase tracking-[0.05em] text-muted-foreground font-medium">Projeção do Mês</p>
           <div className="space-y-1.5">
             <div>
               <p className="text-[10px] text-muted-foreground">Receita Projetada</p>
-              <p className="text-lg font-bold text-foreground tabular-nums">
-                <AnimatedCounter value={proj.receitaProj} prefix="R$ " />
-              </p>
+              <p className="text-lg font-bold text-foreground tabular-nums"><AnimatedCounter value={proj.receitaProj} prefix="R$ " /></p>
             </div>
             <div>
               <p className="text-[10px] text-muted-foreground">Lucro Projetado</p>
-              <p className={`text-sm font-bold tabular-nums ${proj.lucroProj >= 0 ? "text-emerald-500" : "text-red-400"}`}>
+              <p className={`text-sm font-bold tabular-nums ${proj.lucroProj >= 0 ? "text-success" : "text-primary"}`}>
                 <AnimatedCounter value={proj.lucroProj} prefix="R$ " />
               </p>
             </div>
@@ -104,7 +98,7 @@ const FinancialHealth = ({ data }: { data?: DashboardData }) => {
               <div className="h-1.5 rounded-full bg-secondary/50 overflow-hidden">
                 <motion.div initial={{ width: 0 }} animate={{ width: `${proj.progressPercent}%` }}
                   transition={{ duration: 1, delay: 0.8 }}
-                  className="h-full rounded-full bg-gradient-to-r from-primary to-amber-400" />
+                  className="h-full rounded-full bg-gradient-to-r from-primary to-gold" />
               </div>
             </div>
           </div>

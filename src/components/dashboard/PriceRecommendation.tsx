@@ -41,8 +41,7 @@ const PriceRecommendation = () => {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.05, duration: 0.4 }}
-      className="rounded-xl p-3 md:p-6 transition-all duration-300 overflow-hidden"
-      style={{ background: "rgba(14,20,35,0.85)", backdropFilter: "blur(16px)", border: "1px solid rgba(245,158,11,0.08)", boxShadow: "0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.03)" }}>
+      className="rounded-xl p-3 md:p-6 transition-all duration-300 overflow-hidden bg-card border border-border">
       
       <h3 className="text-[11px] uppercase tracking-[0.05em] text-muted-foreground font-medium flex items-center gap-1.5 mb-3">
         <DollarSign className="h-3.5 w-3.5 text-primary shrink-0" />
@@ -74,20 +73,20 @@ const PriceRecommendation = () => {
       {result && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
           {/* Price range */}
-          <div className="rounded-xl p-3 bg-emerald-500/10 border border-emerald-500/20">
+          <div className="rounded-xl p-3 bg-success/10 border border-success/20">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[10px] uppercase text-muted-foreground font-medium">Preço Sugerido</span>
-              <span className="text-lg font-bold text-emerald-400">{formatCurrency(result.precoSugerido)}</span>
+              <span className="text-lg font-bold text-gold">{formatCurrency(result.precoSugerido)}</span>
             </div>
             <div className="flex justify-between text-[10px] text-muted-foreground">
               <span>Mín: {formatCurrency(result.precoMinimo)}</span>
               <span>Máx: {formatCurrency(result.precoMaximo)}</span>
             </div>
             <div className="mt-2 h-2 rounded-full bg-secondary/30 overflow-hidden">
-              <div className="h-full rounded-full bg-gradient-to-r from-red-500 via-emerald-500 to-primary"
+              <div className="h-full rounded-full bg-gradient-to-r from-primary via-gold to-success"
                 style={{ width: `${Math.min(100, result.margemEstimada)}%` }} />
             </div>
-            <p className="text-[10px] text-emerald-400 mt-1">Margem estimada: {result.margemEstimada}%</p>
+            <p className="text-[10px] text-gold mt-1">Margem estimada: {result.margemEstimada}%</p>
           </div>
 
           {/* Justification */}
@@ -105,7 +104,7 @@ const PriceRecommendation = () => {
                     <span className="text-muted-foreground truncate mr-2">{s.descricao}</span>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-foreground font-medium">{formatCurrency(s.preco)}</span>
-                      <span className={`text-[10px] ${s.margem >= 40 ? "text-emerald-400" : "text-red-400"}`}>{s.margem}%</span>
+                      <span className={`text-[10px] ${s.margem >= 40 ? "text-success" : "text-primary"}`}>{s.margem}%</span>
                     </div>
                   </div>
                 ))}

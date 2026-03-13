@@ -24,11 +24,11 @@ const OperationalMetrics = ({ data }: { data?: DashboardData }) => {
       <DonutCard index={2} title="Taxa de Desconto" percent={m.taxaDesconto.percent} details={[
         `${formatCurrency(m.taxaDesconto.total)} em descontos`,
         `${m.taxaDesconto.count} serv. | Méd: ${formatCurrency(m.taxaDesconto.media)}`,
-      ]} color="#F59E0B" />
+      ]} color="#C9A84C" />
       <DonutCard index={3} title="Impacto Taxas Máquina" percent={m.impactoTaxas.percent} details={[
         `${formatCurrency(m.impactoTaxas.total)} em taxas`,
         `Créd: ${formatCurrency(m.impactoTaxas.credito)} | Déb: ${formatCurrency(m.impactoTaxas.debito)}`,
-      ]} color="#3B82F6" />
+      ]} color="#BEBEBE" />
     </div>
   );
 };
