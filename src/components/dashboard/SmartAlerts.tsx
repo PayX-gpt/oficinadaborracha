@@ -68,7 +68,7 @@ const SmartAlerts = () => {
           <Bell className="h-3.5 w-3.5 text-primary shrink-0" />
           <span>Alertas Inteligentes</span>
           {visibleAlerts.length > 0 && (
-            <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white px-1">
+            <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground px-1">
               {visibleAlerts.length}
             </span>
           )}
