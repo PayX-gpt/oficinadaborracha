@@ -8,10 +8,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 
 const typeConfig: Record<string, { icon: any; color: string; bg: string }> = {
-  alerta: { icon: AlertTriangle, color: "text-red-400", bg: "bg-red-500/10" },
-  info: { icon: Info, color: "text-blue-400", bg: "bg-blue-500/10" },
-  sucesso: { icon: CheckCircle, color: "text-emerald-400", bg: "bg-emerald-500/10" },
-  insight: { icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
+  alerta: { icon: AlertTriangle, color: "text-primary", bg: "bg-primary/10" },
+  info: { icon: Info, color: "text-chrome", bg: "bg-chrome/10" },
+  sucesso: { icon: CheckCircle, color: "text-success", bg: "bg-success/10" },
+  insight: { icon: TrendingUp, color: "text-gold", bg: "bg-gold/10" },
 };
 
 const AppHeader = () => {
