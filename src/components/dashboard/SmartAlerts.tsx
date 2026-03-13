@@ -14,9 +14,9 @@ interface Notificacao {
 }
 
 const tipoConfig: Record<string, { icon: any; color: string; bg: string }> = {
-  alerta: { icon: AlertTriangle, color: "text-red-400", bg: "bg-red-500/10" },
-  insight: { icon: TrendingUp, color: "text-blue-400", bg: "bg-blue-500/10" },
-  sucesso: { icon: CheckCircle, color: "text-emerald-400", bg: "bg-emerald-500/10" },
+  alerta: { icon: AlertTriangle, color: "text-primary", bg: "bg-primary/10" },
+  insight: { icon: TrendingUp, color: "text-gold", bg: "bg-gold/10" },
+  sucesso: { icon: CheckCircle, color: "text-success", bg: "bg-success/10" },
 };
 
 const SmartAlerts = () => {
