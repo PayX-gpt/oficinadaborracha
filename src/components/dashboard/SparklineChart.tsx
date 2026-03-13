@@ -6,7 +6,7 @@ interface SparklineChartProps {
   height?: number;
 }
 
-const SparklineChart = ({ data, color = "hsl(38 92% 50%)", height = 30 }: SparklineChartProps) => {
+const SparklineChart = ({ data, color = "hsl(0 90% 41%)", height = 30 }: SparklineChartProps) => {
   const chartData = data.map((v, i) => ({ v, i }));
   return (
     <ResponsiveContainer width={60} height={height}>
