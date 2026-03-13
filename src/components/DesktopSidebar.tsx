@@ -28,6 +28,7 @@ function getNavItems(role: UserRole): NavItem[] {
         { path: "/pecas", label: "Peças", icon: Package },
         { path: "/history", label: "Histórico", icon: ClipboardList },
         { path: "/install", label: "Instalar App", icon: Download },
+        { path: "/playbook", label: "Playbook", icon: BookOpen },
         { path: "/settings", label: "Configurações", icon: Settings },
       ];
     case "gerente":
