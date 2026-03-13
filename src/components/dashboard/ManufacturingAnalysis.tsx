@@ -31,8 +31,8 @@ const ManufacturingAnalysis = ({ data }: { data?: DashboardData }) => {
           <ComposedChart data={m.timeline}>
             <defs>
               <linearGradient id="mfgGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10B981" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                <stop offset="5%" stopColor="#C9A84C" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#C9A84C" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
