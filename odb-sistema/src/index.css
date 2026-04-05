@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+/* ============================================
+   ODB Sistema - Design Tokens
+   Oficina da Borracha - Theme
+   ============================================ */
+
+@theme {
+  /* Colors - Brand */
+  --color-odb-dark: #070B14;
+  --color-odb-darker: #0A0E1A;
+  --color-odb-card: #111827;
+  --color-odb-card-hover: #1F2937;
+  --color-odb-border: #1F2937;
+
+  /* Colors - Accent */
+  --color-odb-red: #D20A0A;
+  --color-odb-red-light: #EF4444;
+  --color-odb-gold: #C9A84C;
+  --color-odb-gold-light: #D4B85A;
+  --color-odb-chrome: #8A8D93;
+
+  /* Colors - Status */
+  --color-odb-success: #22C55E;
+  --color-odb-warning: #F59E0B;
+  --color-odb-info: #3B82F6;
+  --color-odb-danger: #EF4444;
+
+  /* Colors - Text */
+  --color-odb-text: #F3F4F6;
+  --color-odb-text-muted: #9CA3AF;
+  --color-odb-text-dim: #6B7280;
+
+  /* Fonts */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Border Radius */
+  --radius-lg: 0.75rem;
+  --radius-md: 0.5rem;
+  --radius-sm: 0.25rem;
+}
+
+/* ============================================
+   Base Styles
+   ============================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-odb-dark);
+  color: var(--color-odb-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-odb-darker);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-odb-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-odb-chrome);
+}
